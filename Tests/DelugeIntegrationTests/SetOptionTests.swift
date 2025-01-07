@@ -1,34 +1,35 @@
-import Combine
 import Deluge
-import XCTest
+import Combine
+import Testing
 
+@Suite("Set Options Request", .serialized)
 class SetOptionTests: IntegrationTestCase {
-    func test_filePriorities() {
+    @Test
+    func test_filePriorities() async {
         let url = urlForResource(named: TestConfig.torrent1)
-        let expectation = self.expectation(description: #function)
-        expectation.expectedFulfillmentCount = 2
-        ensureTorrentAdded(fileURL: url, to: client)
-            .flatMap { _ in
-                self.client.request(.setOptions(
-                    hashes: [TestConfig.torrent1Hash],
-                    options: [.filePriorities([.disabled])]
-                ))
-            }
-            .sink(
-                receiveCompletion: { completion in
-                    if case let .failure(error) = completion {
-                        XCTFail(String(describing: error))
-                    }
-                    expectation.fulfill()
-                },
-                receiveValue: { _ in
-                    expectation.fulfill()
+
+        await withCheckedContinuation { continuation in
+            ensureTorrentAdded(fileURL: url, to: client)
+                .flatMap { _ in
+                    self.client.request(.setOptions(
+                        hashes: [TestConfig.torrent1Hash],
+                        options: [.filePriorities([.disabled])]
+                    ))
                 }
-            )
-            .store(in: &cancellables)
-        waitForExpectations(timeout: TestConfig.timeout)
+                .sink(
+                    receiveCompletion: { completion in
+                        if case let .failure(error) = completion {
+                            Issue.record(error)
+                        }
+                        continuation.resume()
+                    },
+                    receiveValue: { _ in }
+                )
+                .store(in: &cancellables)
+        }
     }
 
+    @Test
     func test_filePriorities_concurrency() async throws {
         let url = urlForResource(named: TestConfig.torrent1)
         try await ensureTorrentAdded(fileURL: url, to: client)

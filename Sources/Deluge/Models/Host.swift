@@ -1,7 +1,7 @@
 import Foundation
 
 /// A Deluge host
-public struct Host: Equatable {
+public struct Host: Equatable, Decodable, Sendable {
     public typealias ID = String
 
     public let id: ID

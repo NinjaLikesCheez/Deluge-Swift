@@ -1,14 +1,17 @@
-import Combine
 import Deluge
+import Combine
 import XCTest
 
-class IntegrationTestCase: XCTestCase {
+class IntegrationTestCase {
     var client: Deluge!
     var cancellables: Set<AnyCancellable>!
 
-    override func setUp() {
-        super.setUp()
-        client = Deluge(baseURL: TestConfig.serverURL, password: TestConfig.serverPassword)
+    init() {
+        client = Deluge(
+            baseURL: TestConfig.serverURL,
+            password: TestConfig.serverPassword
+        )
+
         cancellables = Set()
     }
 }

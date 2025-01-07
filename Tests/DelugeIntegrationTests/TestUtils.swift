@@ -1,51 +1,42 @@
-import Combine
 import Deluge
+import Combine
 import Foundation
-import XCTest
+import Testing
 
 func urlForResource(named resourceName: String) -> URL {
-    URL(fileURLWithPath: #file)
+    URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .appendingPathComponent("Resources", isDirectory: true)
         .appendingPathComponent(resourceName)
 }
 
-func ensureTorrentAdded(fileURL: URL, to client: Deluge) -> AnyPublisher<Void, DelugeError> {
+func ensureTorrentAdded(fileURL: URL, to client: Client) -> AnyPublisher<Void, Client.Error> {
     client.request(.add(fileURL: fileURL))
         .map { _ in () }
         .replaceError(with: ())
-        .setFailureType(to: DelugeError.self)
+        .setFailureType(to: Client.Error.self)
         .eraseToAnyPublisher()
 }
 
-// When migrated to Swift Testing: tests that use this may stomp each other
-// figure out how to fix that (or switch to swift testing???)
-func ensureTorrentRemoved(hash: String, from client: Deluge) -> AnyPublisher<Void, DelugeError> {
-    client.request(.remove(hashes: [hash], removeData: false))
-        .map { _ in () }
-        .replaceError(with: ())
-        .setFailureType(to: DelugeError.self)
-        .eraseToAnyPublisher()
-}
-
-func ensureTorrentAdded(fileURL: URL, to client: Deluge, file: StaticString = #file, line: UInt = #line) async throws {
+func ensureTorrentAdded(fileURL: URL, to client: Client) async {
     do {
-        _ = try await client.request(.add(fileURL: fileURL))
+        try await client.request(.add(fileURL: fileURL))
     } catch {
         switch error {
-        case .torrentAlreadyAddedException:
-            return
+        case .unknown(let unknownError):
+            if case DelugeError.torrentAlreadyAddedException = unknownError {
+                return
+            }
+
+            Issue.record(unknownError)
         default:
-            XCTFail(String(describing: error), file: file, line: line)
+            Issue.record(error)
         }
     }
 }
 
-func ensureTorrentRemoved(
-    hash: String,
-    from client: Deluge,
-    file: StaticString = #file,
-    line: UInt = #line
-) async throws {
+//// When migrated to Swift Testing: tests that use this may stomp each other
+//// figure out how to fix that (or switch to swift testing???)
+func ensureTorrentRemoved(hash: String, from client: Client) async throws {
     try await client.request(.remove(hashes: [hash], removeData: false))
 }

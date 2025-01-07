@@ -1,62 +1,70 @@
-import Combine
 import Deluge
-import XCTest
+import Combine
+import Foundation
+import Testing
 
+@Suite("Core Requests", .serialized)
 class CoreRequestsTests: IntegrationTestCase {
-    func test_addFileURL() {
+    @Test
+    func test_addFileURL() async throws {
         let url = urlForResource(named: TestConfig.torrent2)
-        let expectation = self.expectation(description: #function)
-        expectation.expectedFulfillmentCount = 2
-        ensureTorrentRemoved(hash: TestConfig.torrent2Hash, from: client)
-            .flatMap { self.client.request(.add(fileURL: url)) }
-            .sink(
-                receiveCompletion: { completion in
-                    if case let .failure(error) = completion {
-                        XCTFail(String(describing: error))
+
+        try await ensureTorrentRemoved(hash: TestConfig.torrent2Hash, from: client)
+
+        await withCheckedContinuation { continuation in
+            client.request(.add(fileURL: url))
+                .sink(
+                    receiveCompletion: { completion in
+                        if case let .failure(error) = completion {
+                            Issue.record(error)
+                        } else {
+                            continuation.resume()
+                        }
+                    },
+                    receiveValue: { hash in
+                        #expect(hash == TestConfig.torrent2Hash)
                     }
-                    expectation.fulfill()
-                },
-                receiveValue: { hash in
-                    XCTAssertEqual(hash, TestConfig.torrent2Hash)
-                    expectation.fulfill()
-                }
-            )
-            .store(in: &cancellables)
-        waitForExpectations(timeout: TestConfig.timeout)
+                )
+                .store(in: &cancellables)
+        }
     }
 
+    @Test
     func test_addFileURL_concurrency() async throws {
         let url = urlForResource(named: TestConfig.torrent2)
         try await ensureTorrentRemoved(hash: TestConfig.torrent2Hash, from: client)
         let hash = try await client.request(.add(fileURL: url))
-        XCTAssertEqual(hash, TestConfig.torrent2Hash)
+
+        #expect(hash == TestConfig.torrent2Hash)
     }
 
-    func test_addFileURLs() {
+    @Test
+    func test_addFileURLs() async throws {
         let urls = [
             urlForResource(named: TestConfig.torrent3),
             urlForResource(named: TestConfig.torrent4),
         ]
-        let expectation = self.expectation(description: #function)
-        expectation.expectedFulfillmentCount = 2
-        ensureTorrentRemoved(hash: TestConfig.torrent3Hash, from: client)
-            .flatMap { ensureTorrentRemoved(hash: TestConfig.torrent4Hash, from: self.client) }
-            .flatMap { self.client.request(.add(fileURLs: urls)) }
-            .sink(
-                receiveCompletion: { completion in
-                    if case let .failure(error) = completion {
-                        XCTFail(String(describing: error))
-                    }
-                    expectation.fulfill()
-                },
-                receiveValue: { _ in
-                    expectation.fulfill()
-                }
-            )
-            .store(in: &cancellables)
-        waitForExpectations(timeout: TestConfig.timeout)
+
+        try await ensureTorrentRemoved(hash: TestConfig.torrent3Hash, from: client)
+        try await ensureTorrentRemoved(hash: TestConfig.torrent4Hash, from: client)
+
+        await withCheckedContinuation { continuation in
+            client.request(.add(fileURLs: urls))
+                .sink(
+                    receiveCompletion: { completion in
+                        if case let .failure(error) = completion {
+                            Issue.record(error)
+                        } else {
+                            continuation.resume()
+                        }
+                    },
+                    receiveValue: { _ in }
+                )
+                .store(in: &cancellables)
+        }
     }
 
+    @Test
     func test_addFileURLs_concurrency() async throws {
         let urls = [
             urlForResource(named: TestConfig.torrent3),
@@ -69,222 +77,232 @@ class CoreRequestsTests: IntegrationTestCase {
         try await client.request(.add(fileURLs: urls))
     }
 
-    func test_addMagnetURL() {
+    @Test
+    func test_addMagnetURL() async throws {
         let url = URL(string: TestConfig.magnetURL)!
-        let expectation = self.expectation(description: #function)
-        expectation.expectedFulfillmentCount = 2
-        ensureTorrentRemoved(hash: TestConfig.magnetHash, from: client)
-            .flatMap { self.client.request(.add(magnetURL: url)) }
-            .sink(
-                receiveCompletion: { completion in
-                    if case let .failure(error) = completion {
-                        XCTFail(String(describing: error))
+        try await ensureTorrentRemoved(hash: TestConfig.magnetHash, from: client)
+
+        await withCheckedContinuation { continuation in
+            client.request(.add(magnetURL: url))
+                .sink(
+                    receiveCompletion: { completion in
+                        if case let .failure(error) = completion {
+                            Issue.record(error)
+                        }
+
+                        continuation.resume()
+                    },
+                    receiveValue: { hash in
+                        #expect(hash == TestConfig.magnetHash)
                     }
-                    expectation.fulfill()
-                },
-                receiveValue: { hash in
-                    XCTAssertEqual(hash, TestConfig.magnetHash)
-                    expectation.fulfill()
-                }
-            )
-            .store(in: &cancellables)
-        waitForExpectations(timeout: TestConfig.timeout)
+                )
+                .store(in: &cancellables)
+        }
     }
 
+    @Test
     func test_addMagnetURL_concurrency() async throws {
         let url = URL(string: TestConfig.magnetURL)!
         try await ensureTorrentRemoved(hash: TestConfig.magnetHash, from: client)
 
         let hash = try await client.request(.add(magnetURL: url))
-        XCTAssertEqual(hash, TestConfig.magnetHash)
+        #expect(hash == TestConfig.magnetHash)
     }
 
-    func test_addURL() {
+    @Test
+    func test_addURL() async throws {
         let url = URL(string: TestConfig.webURL)!
-        let expectation = self.expectation(description: #function)
-        expectation.expectedFulfillmentCount = 2
-        ensureTorrentRemoved(hash: TestConfig.webURLHash, from: client)
-            .flatMap { self.client.request(.add(url: url)) }
-            .sink(
-                receiveCompletion: { completion in
-                    if case let .failure(error) = completion {
-                        XCTFail(String(describing: error))
-                    }
-                    expectation.fulfill()
-                },
-                receiveValue: { _ in
-                    expectation.fulfill()
-                }
-            )
-            .store(in: &cancellables)
-        waitForExpectations(timeout: 2)
+
+        try await ensureTorrentRemoved(hash: TestConfig.webURLHash, from: client)
+
+        await withCheckedContinuation { continuation in
+            client.request(.add(url: url))
+                .sink(
+                    receiveCompletion: { completion in
+                        if case let .failure(error) = completion {
+                            Issue.record(error)
+                        } else {
+                            continuation.resume()
+                        }
+                    },
+                    receiveValue: { _ in }
+                )
+                .store(in: &cancellables)
+        }
     }
 
+    @Test
     func test_addURL_concurrency() async throws {
         let url = URL(string: TestConfig.webURL)!
         try await ensureTorrentRemoved(hash: TestConfig.webURLHash, from: client)
         try await client.request(.add(url: url))
     }
 
-    func test_reannounce() {
+    @Test
+    func test_reannounce() async {
         let url = urlForResource(named: TestConfig.torrent1)
-        let expectation = self.expectation(description: #function)
-        expectation.expectedFulfillmentCount = 2
-        ensureTorrentAdded(fileURL: url, to: client)
-            .flatMap { _ in self.client.request(.reannounce(hashes: [TestConfig.torrent1Hash])) }
-            .sink(
-                receiveCompletion: { completion in
-                    if case let .failure(error) = completion {
-                        XCTFail(String(describing: error))
-                    }
-                    expectation.fulfill()
-                },
-                receiveValue: { _ in
-                    expectation.fulfill()
-                }
-            )
-            .store(in: &cancellables)
-        waitForExpectations(timeout: TestConfig.timeout)
+
+        await withCheckedContinuation { continuation in
+            ensureTorrentAdded(fileURL: url, to: client)
+                .flatMap { _ in self.client.request(.reannounce(hashes: [TestConfig.torrent1Hash])) }
+                .sink(
+                    receiveCompletion: { completion in
+                        if case let .failure(error) = completion {
+                            Issue.record(error)
+                        } else {
+                            continuation.resume()
+                        }
+                    },
+                    receiveValue: { _ in }
+                )
+                .store(in: &cancellables)
+        }
     }
 
+    @Test
     func test_reannounce_concurrency() async throws {
         let url = urlForResource(named: TestConfig.torrent1)
-        try await ensureTorrentAdded(fileURL: url, to: client)
+        await ensureTorrentAdded(fileURL: url, to: client)
         try await client.request(.reannounce(hashes: [TestConfig.torrent1Hash]))
     }
 
-    func test_recheck() {
+    @Test
+    func test_recheck() async {
         let url = urlForResource(named: TestConfig.torrent1)
-        let expectation = self.expectation(description: #function)
-        expectation.expectedFulfillmentCount = 2
-        ensureTorrentAdded(fileURL: url, to: client)
-            .flatMap { _ in self.client.request(.recheck(hashes: [TestConfig.torrent1Hash])) }
-            .sink(
-                receiveCompletion: { completion in
-                    if case let .failure(error) = completion {
-                        XCTFail(String(describing: error))
-                    }
-                    expectation.fulfill()
-                },
-                receiveValue: { _ in
-                    expectation.fulfill()
-                }
-            )
-            .store(in: &cancellables)
-        waitForExpectations(timeout: TestConfig.timeout)
+
+        await withCheckedContinuation { continuation in
+            ensureTorrentAdded(fileURL: url, to: client)
+                .flatMap { _ in self.client.request(.recheck(hashes: [TestConfig.torrent1Hash])) }
+                .sink(
+                    receiveCompletion: { completion in
+                        if case let .failure(error) = completion {
+                            Issue.record(error)
+                        } else {
+                            continuation.resume()
+                        }
+                    },
+                    receiveValue: { _ in }
+                )
+                .store(in: &cancellables)
+        }
     }
 
+    @Test
     func test_recheck_concurrency() async throws {
         let url = urlForResource(named: TestConfig.torrent1)
-        try await ensureTorrentAdded(fileURL: url, to: client)
+        await ensureTorrentAdded(fileURL: url, to: client)
         try await client.request(.recheck(hashes: [TestConfig.torrent1Hash]))
     }
 
-    func test_move() {
+    @Test
+    func test_move() async throws {
         let url = urlForResource(named: TestConfig.torrent1)
-        let expectation = self.expectation(description: #function)
-        expectation.expectedFulfillmentCount = 2
-        ensureTorrentAdded(fileURL: url, to: client)
-            .flatMap { _ in self.client.request(.move(hashes: [TestConfig.torrent1Hash], path: "/tmp")) }
-            .sink(
-                receiveCompletion: { completion in
-                    if case let .failure(error) = completion {
-                        XCTFail(String(describing: error))
-                    }
-                    expectation.fulfill()
-                },
-                receiveValue: { _ in
-                    expectation.fulfill()
-                }
-            )
-            .store(in: &cancellables)
-        waitForExpectations(timeout: TestConfig.timeout)
+
+        await withCheckedContinuation { continuation in
+            ensureTorrentAdded(fileURL: url, to: client)
+                .flatMap { _ in self.client.request(.move(hashes: [TestConfig.torrent1Hash], path: "/tmp")) }
+                .sink(
+                    receiveCompletion: { completion in
+                        if case let .failure(error) = completion {
+                            Issue.record(error)
+                        } else {
+                            continuation.resume()
+                        }
+                    },
+                    receiveValue: { _ in }
+                )
+                .store(in: &cancellables)
+        }
     }
 
+    @Test
     func test_move_concurrency() async throws {
         let url = urlForResource(named: TestConfig.torrent1)
-        try await ensureTorrentAdded(fileURL: url, to: client)
+        await ensureTorrentAdded(fileURL: url, to: client)
         try await client.request(.move(hashes: [TestConfig.torrent1Hash], path: "/tmp"))
     }
 
-    func test_removeTorrents_error() {
-        let expectation = self.expectation(description: #function)
-        expectation.expectedFulfillmentCount = 2
-        client.request(.remove(hashes: ["a"], removeData: false))
-            .sink(
-                receiveCompletion: { completion in
-                    if case let .failure(error) = completion {
-                        XCTFail(String(describing: error))
+    @Test
+    func test_removeTorrents_error() async {
+        await withCheckedContinuation { continuation in
+            client.request(.remove(hashes: ["a"], removeData: false))
+                .sink(
+                    receiveCompletion: { completion in
+                        if case let .failure(error) = completion {
+                            Issue.record(error)
+                        }
+                    },
+                    receiveValue: { errors in
+                        #expect(errors.count == 1)
+                        #expect(errors.first?.hash == "a")
+                        continuation.resume()
                     }
-                    expectation.fulfill()
-                },
-                receiveValue: { errors in
-                    XCTAssertEqual(errors.count, 1)
-                    XCTAssertEqual(errors.first?.hash, "a")
-                    expectation.fulfill()
-                }
-            )
-            .store(in: &cancellables)
-        waitForExpectations(timeout: TestConfig.timeout)
+                )
+                .store(in: &cancellables)
+        }
     }
 
+    @Test
     func test_removeTorrents_error_concurrency() async throws {
         let errors = try await client.request(.remove(hashes: ["a"], removeData: false))
-        XCTAssertEqual(errors.count, 1)
-        XCTAssertEqual(errors.first?.hash, "a")
+        #expect(errors.count == 1)
+        #expect(errors.first?.hash == "a")
     }
 
-    func test_pause() {
+    @Test
+    func test_pause() async {
         let url = urlForResource(named: TestConfig.torrent1)
-        let expectation = self.expectation(description: #function)
-        expectation.expectedFulfillmentCount = 2
-        ensureTorrentAdded(fileURL: url, to: client)
-            .flatMap { _ in self.client.request(.pause(hashes: [TestConfig.torrent1Hash])) }
-            .sink(
-                receiveCompletion: { completion in
-                    if case let .failure(error) = completion {
-                        XCTFail(String(describing: error))
-                    }
-                    expectation.fulfill()
-                },
-                receiveValue: { _ in
-                    expectation.fulfill()
-                }
-            )
-            .store(in: &cancellables)
-        waitForExpectations(timeout: TestConfig.timeout)
+
+        await withCheckedContinuation { continuation in
+            ensureTorrentAdded(fileURL: url, to: client)
+                .flatMap { _ in self.client.request(.pause(hashes: [TestConfig.torrent1Hash])) }
+                .sink(
+                    receiveCompletion: { completion in
+                        if case let .failure(error) = completion {
+                            Issue.record(error)
+                        } else {
+                            continuation.resume()
+                        }
+                    },
+                    receiveValue: { _ in }
+                )
+                .store(in: &cancellables)
+
+        }
     }
 
+    @Test
     func test_pause_concurrency() async throws {
         let url = urlForResource(named: TestConfig.torrent1)
-        try await ensureTorrentAdded(fileURL: url, to: client)
+        await ensureTorrentAdded(fileURL: url, to: client)
         try await client.request(.pause(hashes: [TestConfig.torrent1Hash]))
     }
 
-    func test_resume() {
+    @Test
+    func test_resume() async {
         let url = urlForResource(named: TestConfig.torrent1)
-        let expectation = self.expectation(description: #function)
-        expectation.expectedFulfillmentCount = 2
-        ensureTorrentAdded(fileURL: url, to: client)
-            .flatMap { _ in self.client.request(.resume(hashes: [TestConfig.torrent1Hash])) }
-            .sink(
-                receiveCompletion: { completion in
-                    if case let .failure(error) = completion {
-                        XCTFail(String(describing: error))
-                    }
-                    expectation.fulfill()
-                },
-                receiveValue: { _ in
-                    expectation.fulfill()
-                }
-            )
-            .store(in: &cancellables)
-        waitForExpectations(timeout: TestConfig.timeout)
+
+        await withCheckedContinuation { continuation in
+            ensureTorrentAdded(fileURL: url, to: client)
+                .flatMap { _ in self.client.request(.resume(hashes: [TestConfig.torrent1Hash])) }
+                .sink(
+                    receiveCompletion: { completion in
+                        if case let .failure(error) = completion {
+                            Issue.record(error)
+                        } else {
+                            continuation.resume()
+                        }
+                    },
+                    receiveValue: { _ in }
+                )
+                .store(in: &cancellables)
+        }
     }
 
+    @Test
     func test_resume_concurrency() async throws {
         let url = urlForResource(named: TestConfig.torrent1)
-        try await ensureTorrentAdded(fileURL: url, to: client)
+        await ensureTorrentAdded(fileURL: url, to: client)
         try await client.request(.resume(hashes: [TestConfig.torrent1Hash]))
     }
 }

@@ -6,7 +6,7 @@ enum TestConfig {
         ProcessInfo.processInfo.environment["TIMEOUT"].flatMap(TimeInterval.init) ?? 2
     }
 
-    static let serverURL = URL(string: "http://localhost:8112")!
+    static let serverURL = URL(string: "http://localhost:8112/json")!
     static let serverPassword = "deluge"
 
     static let torrent1 = "debian.torrent"

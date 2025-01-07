@@ -1,28 +1,32 @@
-import Combine
 import Deluge
-import XCTest
+import Combine
+import Testing
 
+@Suite("Authentication Requests", .serialized)
 class AuthRequestsTests: IntegrationTestCase {
-    func test_authenticate() {
-        let expectation = self.expectation(description: #function)
-        expectation.expectedFulfillmentCount = 2
-        client.request(.authenticate)
-            .sink(
-                receiveCompletion: { completion in
-                    if case let .failure(error) = completion {
-                        XCTFail(String(describing: error))
+    @Test
+    func test_authenticate() async {
+        // TODO: convert _all_ combine tests to use withCheckedContinutation
+        await withCheckedContinuation { continuation in
+            client.request(.authenticate(TestConfig.serverPassword))
+                .sink(
+                    receiveCompletion: { completion in
+                        if case let .failure(error) = completion {
+                            Issue.record(error, "Failed to authenticate")
+                        }
+                    },
+                    receiveValue: { value in
+                        #expect(value)
+                        continuation.resume()
                     }
-                    expectation.fulfill()
-                },
-                receiveValue: { _ in
-                    expectation.fulfill()
-                }
-            )
-            .store(in: &cancellables)
-        waitForExpectations(timeout: TestConfig.timeout)
+                )
+                .store(in: &cancellables)
+        }
     }
 
+    @Test
     func test_authenticate_concurrency() async throws {
-        try await client.request(.authenticate)
+        let result = try await client.request(.authenticate(TestConfig.serverPassword))
+        #expect(result, "Authentication failed")
     }
 }
