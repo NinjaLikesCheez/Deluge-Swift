@@ -14,6 +14,7 @@ struct WebRequestsTests {
             try await ensureTorrentAdded(fileURL: url, to: client)
             try #require(try await ensurePluginEnabled(.label, from: client), "Label plugin could not be enabled")
             for try await state in client.request(.updateUI(properties: Torrent.PropertyKeys.allCases)).values {
+                #expect(state.connected == true)
                 let torrent = state.torrents.first(where: { $0.hash == TestConfig.torrent1Hash })
                 #expect(torrent?.dateAdded != nil)
                 #expect(torrent?.downloaded != nil)
@@ -56,6 +57,8 @@ struct WebRequestsTests {
         try #require(try await ensurePluginEnabled(.label, from: client), "Label plugin could not be enabled")
         try await ensureTorrentAdded(fileURL: url, to: client)
         let state = try await client.request(.updateUI(properties: Torrent.PropertyKeys.allCases))
+        #expect(state.connected == true)
+
         let torrent = state.torrents.first(where: { $0.hash == TestConfig.torrent1Hash })
 
         #expect(torrent?.dateAdded != nil)
