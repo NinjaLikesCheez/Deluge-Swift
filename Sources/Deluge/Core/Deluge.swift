@@ -26,24 +26,13 @@ public final class Deluge: Sendable {
     /// The underlying API Client.
     private let client: DelugeClient
 
-    private let logger: Logger
+    private let logger = Logger(label: "Deluge")
 
     /// Creates a Deluge client to interact with the given server URL.
     /// - Parameters:
     ///   - baseURL: The URL of the Deluge server.
     ///   - password: The password used for authentication.
     public init(baseURL: URL, password: String, basicAuthentication: BasicAuthentication? = nil) {
-        LoggingSystem.bootstrap { identifier in
-            var logger = StreamLogHandler.standardOutput(label: identifier)
-#if DEBUG
-            logger.logLevel = .debug
-#else
-            logger.logLevel = .info
-#endif
-            return logger
-        }
-        logger = Logger(label: "Deluge")
-
         self.baseURL = baseURL
         self.password = password
         self.basicAuthentication = basicAuthentication
