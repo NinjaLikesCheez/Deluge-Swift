@@ -93,7 +93,7 @@ public final class Deluge: Sendable {
         /// Sends a request to the server.
         /// - Parameter request: The request to be sent to the server.
         /// - Returns: A publisher that emits a value when the request completes.
-        func request<Value>(_ request: Request<Value>) -> AnyPublisher<Value, DelugeClient.Error> {
+        func request<Value: Decodable>(_ request: DelugeRequest<Value>) -> AnyPublisher<Value, DelugeClient.Error> {
             let retryIfNeeded = { (error: DelugeClient.Error) -> AnyPublisher<Value, DelugeClient.Error> in
                 guard case .response(.unauthenticated) = error else {
                     return Fail(error: error)
@@ -125,7 +125,7 @@ public extension Deluge {
     /// - Parameter request: The request to be sent to the server.
     /// - Returns: A publisher that emits a value when the request completes.
     @discardableResult
-    func request<Value>(_ request: Request<Value>) async throws(DelugeClient.Error) -> Value {
+    func request<Value: Decodable>(_ request: DelugeRequest<Value>) async throws(DelugeClient.Error) -> Value {
         do {
             return try await client.request(request)
         } catch {
@@ -133,7 +133,7 @@ public extension Deluge {
                 throw error
             }
 
-            try await client.request(.authenticate(password))
+            try await client.request(DelugeRequest<Bool>.authenticate(password))
             return try await client.request(request)
         }
     }

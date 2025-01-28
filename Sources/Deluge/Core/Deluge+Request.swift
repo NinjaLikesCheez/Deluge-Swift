@@ -1,7 +1,15 @@
 import APIClient
 import Foundation
 
-public extension Request {
+public struct DelugeRequest<DelugeResponse: Decodable>: Request {
+    public typealias Response = DelugeResponse
+    public var method: HTTPMethod
+    public var path: String?
+    public var headers: HTTPFields
+    public var body: RequestBody?
+    public var prepare: ((URLRequest) -> URLRequest)
+    public var transform: ((Data, HTTPURLResponse) throws -> DelugeResponse)?
+
     /// Creates a new request with the given method, arguments, and optional transform.
     ///
     /// This method is here to mirror the previous initializer for the Deluge Request.
@@ -11,27 +19,27 @@ public extension Request {
     ///   - method: The method to call.
     ///   - args: The arguments to pass to the method.
     ///   - transform: An optional transform to apply to the response data.
-    init(
+    public init(
         method: String,
         args: [Any],
-        transform: ((Data) throws -> Value)? = nil
+        transform: ((Data) throws -> Response)? = nil
     ) {
-        self = .init(
-            method: .post,
-            path: nil,
-            body: try! delugeFormatBody(method, parameters: args),
-            transform: { try Self.handleTransform($0, response: $1, injected: transform) }
-        )
+        self.method = .post
+        self.path = nil
+        self.headers = [:]
+        self.body = try! delugeFormatBody(method, parameters: args)
+        self.prepare = { $0 }
+        self.transform = { try Self.handleTransform($0, response: $1, injected: transform) }
     }
 
-    private static func handleTransform(_ data: Data, response: HTTPURLResponse, injected: ((Data) throws -> Value)?) throws -> Value {
+    private static func handleTransform(_ data: Data, response: HTTPURLResponse, injected: ((Data) throws -> Response)?) throws -> Response {
         do {
             if let injected {
                 let transformed = try injected(data)
                 return transformed
             }
 
-            let response = try JSONDecoder().decode(Deluge.Response<Value>.self, from: data)
+            let response = try JSONDecoder().decode(Deluge.Response<Response>.self, from: data)
 
             guard let error = response.error else {
                 return response.result

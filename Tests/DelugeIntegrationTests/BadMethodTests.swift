@@ -11,7 +11,7 @@ struct BadMethodTests {
     #if canImport(Combine)
         @Test
         func test_badMethod() async {
-            let bad = Request<EmptyResponse>(method: "bad", args: []) { _ in
+            let bad = DelugeRequest<EmptyResponse>(method: "bad", args: []) { _ in
                 throw DelugeClient.Error.response(.message(nil))
             }
 
@@ -37,7 +37,7 @@ struct BadMethodTests {
 
     @Test
     func test_badMethod_concurrency() async throws {
-        let bad = Request<EmptyResponse>(method: "bad", args: []) { _ in
+        let bad = DelugeRequest<EmptyResponse>(method: "bad", args: []) { _ in
             throw DelugeClient.Error.response(.message(nil))
         }
 
