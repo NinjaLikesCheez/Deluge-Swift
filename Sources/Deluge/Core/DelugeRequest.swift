@@ -6,7 +6,7 @@ public struct DelugeRequest<DelugeResponse: Decodable>: Request {
     public var method: HTTPMethod
     public var path: String?
     public var headers: HTTPFields
-    public var body: RequestBody?
+    public var body: () throws -> RequestBody?
     public var prepare: (URLRequest) -> URLRequest
     public var transform: ((Data, HTTPURLResponse) throws -> DelugeResponse)?
 
@@ -27,12 +27,16 @@ public struct DelugeRequest<DelugeResponse: Decodable>: Request {
         self.method = .post
         path = nil
         headers = [:]
-        body = try! delugeFormatBody(method, parameters: args)
+        body = { try delugeFormatBody(method, parameters: args) }
         prepare = { $0 }
         self.transform = { try Self.handleTransform($0, response: $1, injected: transform) }
     }
 
-    private static func handleTransform(_ data: Data, response: HTTPURLResponse, injected: ((Data) throws -> Response)?) throws -> Response {
+    private static func handleTransform(
+        _ data: Data,
+        response: HTTPURLResponse,
+        injected: ((Data) throws -> Response)?
+    ) throws -> Response {
         do {
             if let injected {
                 let transformed = try injected(data)
