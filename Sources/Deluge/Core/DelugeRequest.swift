@@ -7,7 +7,7 @@ public struct DelugeRequest<DelugeResponse: Decodable>: Request {
     public var path: String?
     public var headers: HTTPFields
     public var body: RequestBody?
-    public var prepare: ((URLRequest) -> URLRequest)
+    public var prepare: (URLRequest) -> URLRequest
     public var transform: ((Data, HTTPURLResponse) throws -> DelugeResponse)?
 
     /// Creates a new request with the given method, arguments, and optional transform.
@@ -25,10 +25,10 @@ public struct DelugeRequest<DelugeResponse: Decodable>: Request {
         transform: ((Data) throws -> Response)? = nil
     ) {
         self.method = .post
-        self.path = nil
-        self.headers = [:]
-        self.body = try! delugeFormatBody(method, parameters: args)
-        self.prepare = { $0 }
+        path = nil
+        headers = [:]
+        body = try! delugeFormatBody(method, parameters: args)
+        prepare = { $0 }
         self.transform = { try Self.handleTransform($0, response: $1, injected: transform) }
     }
 
