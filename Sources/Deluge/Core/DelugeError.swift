@@ -29,6 +29,8 @@ public enum DelugeResponseError: Error, Sendable {
     case message(String?)
     /// The provided authentication was not valid.
     case unauthenticated
+    /// The Deluge daemon is not connected.
+    case unconnected
     /// The added torrent is already in the session.
     case torrentAlreadyInSession
     /// Until everything uses typed throws... this has to be here

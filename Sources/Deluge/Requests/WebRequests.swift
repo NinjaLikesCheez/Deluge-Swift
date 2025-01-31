@@ -1,6 +1,10 @@
 import APIClient
 import Foundation
 
+private struct ConnectedResponse: Decodable {
+    let connected: Bool
+}
+
 public extension DelugeRequest {
     /// Requests the information required to update the web interface.
     ///
@@ -10,7 +14,22 @@ public extension DelugeRequest {
     ///
     /// - Parameter properties: The torrent properties to include.
     static func updateUI(properties: [Torrent.PropertyKeys]) -> DelugeRequest<TorrentsAndLabels> {
-        .init(method: "web.update_ui", args: [properties.map(\.rawValue), []])
+        .init(
+            method: "web.update_ui",
+            args: [properties.map(\.rawValue), []],
+            transform: { data in
+                // this is seemingly the only API that has a 'connected' property that tells us if we are connected
+                // but, when it's false - the other properties are null.
+                // So we have to decode a custom response first to check, then decode the result if we're connected
+                let response = try JSONDecoder().decode(Deluge.Response<ConnectedResponse>.self, from: data)
+
+                guard response.result.connected else {
+                    throw DelugeClient.Error.response(.unconnected)
+                }
+
+                return try JSONDecoder().decode(Deluge.Response<TorrentsAndLabels>.self, from: data).result
+            }
+        )
     }
 
     /// Requests the list of items for a torrent.
@@ -52,6 +71,13 @@ public extension DelugeRequest {
     /// - Parameter hostID: The ID of the host to connect to.
     static func connect(to hostID: Host.ID) -> DelugeRequest<EmptyResponse> {
         .init(method: "web.connect", args: [hostID])
+    }
+
+    /// Disconnects from the current host.
+    ///
+    /// RPC Method: `web.disconnect`
+    static var disconnect: DelugeRequest<EmptyResponse> {
+        .init(method: "web.disconnect", args: [])
     }
 
     /// All avaliable and enables plugins in the web UI

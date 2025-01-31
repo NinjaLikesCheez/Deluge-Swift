@@ -1,4 +1,5 @@
 import Deluge
+import Logging
 import Testing
 
 #if canImport(Combine)
@@ -98,5 +99,17 @@ struct WebRequestsTests {
     func test_plugins_concurrency() async throws {
         let plugins = try await client.request(.plugins)
         #expect(plugins.available.count == 10)
+    }
+
+    @Test
+    func test_reconnect_when_disconnected() async throws {
+        _ = try? await client.request(.disconnect)
+        var connected = try await client.request(.connected)
+        #expect(connected == false)
+
+        try await client.request(.updateUI(properties: Torrent.PropertyKeys.allCases))
+
+        connected = try await client.request(.connected)
+        #expect(connected == true)
     }
 }

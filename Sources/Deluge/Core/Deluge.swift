@@ -95,21 +95,40 @@ public final class Deluge: Sendable {
         /// - Returns: A publisher that emits a value when the request completes.
         func request<Value: Decodable>(_ request: DelugeRequest<Value>) -> AnyPublisher<Value, DelugeClient.Error> {
             let retryIfNeeded = { (error: DelugeClient.Error) -> AnyPublisher<Value, DelugeClient.Error> in
-                guard case .response(.unauthenticated) = error else {
-                    return Fail(error: error)
-                        .eraseToAnyPublisher()
-                }
+                switch error {
+                case .response(.unconnected):
+                    // Attempt to connect to the host, if there is only one host
+                    self.request(.hosts)
+                        .flatMap { hosts in
+                            guard hosts.count == 1, let host = hosts.first else {
+                                return Fail<EmptyResponse, DelugeClient.Error>(error: .response(.unconnected))
+                                    .eraseToAnyPublisher()
+                            }
 
-                return self.request(.authenticate(self.password))
-                    .flatMap { authenticated in
-                        if !authenticated {
-                            return Fail<Value, DelugeClient.Error>(error: DelugeClient.Error.response(.unauthenticated))
+                            return self.request(.connect(to: host.id))
                                 .eraseToAnyPublisher()
                         }
+                        .flatMap { _ in
+                            self.client.request(request)
+                                .eraseToAnyPublisher()
+                        }
+                        .eraseToAnyPublisher()
+                case .response(.unauthenticated):
+                    self.request(.authenticate(self.password))
+                        .flatMap { authenticated in
+                            if !authenticated {
+                                return Fail<Value, DelugeClient.Error>(
+                                    error: DelugeClient.Error.response(.unauthenticated)
+                                ).eraseToAnyPublisher()
+                            }
 
-                        return self.client.request(request)
-                    }
-                    .eraseToAnyPublisher()
+                            return self.client.request(request)
+                        }
+                        .eraseToAnyPublisher()
+                default:
+                    Fail<Value, DelugeClient.Error>(error: error)
+                        .eraseToAnyPublisher()
+                }
             }
 
             return client.request(request)
@@ -129,12 +148,22 @@ public extension Deluge {
         do {
             return try await client.request(request)
         } catch {
-            guard case .response(.unauthenticated) = error else {
+            switch error {
+            case .response(.unconnected):
+                let hosts = try await client.request(DelugeRequest<[Host]>.hosts)
+                guard hosts.count == 1, let host = hosts.first else {
+                    throw error
+                }
+
+                try await client.request(DelugeRequest<EmptyResponse>.connect(to: host.id))
+
+                return try await client.request(request)
+            case .response(.unauthenticated):
+                try await client.request(DelugeRequest<Bool>.authenticate(password))
+                return try await client.request(request)
+            default:
                 throw error
             }
-
-            try await client.request(DelugeRequest<Bool>.authenticate(password))
-            return try await client.request(request)
         }
     }
 }
