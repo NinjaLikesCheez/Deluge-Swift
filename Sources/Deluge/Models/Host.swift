@@ -46,7 +46,7 @@ public struct Host: Equatable, Decodable, Sendable {
         }
 
         self.id = id
-        self.hostURL = url
+        hostURL = url
         self.port = port
         self.name = name
     }
