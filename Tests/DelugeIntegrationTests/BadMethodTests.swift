@@ -12,7 +12,7 @@ struct BadMethodTests {
         @Test
         func test_badMethod() async {
             let bad = DelugeRequest<EmptyResponse>(method: "bad", args: []) { _ in
-                throw DelugeClient.Error.response(.message(nil))
+                throw Deluge.Error.response(.message(nil))
             }
 
             await confirmation { confirmation in
@@ -20,7 +20,7 @@ struct BadMethodTests {
                     for try await _ in client.request(bad).values {
                         Issue.record("Should not recieve value")
                     }
-                } catch let error as DelugeClient.Error {
+                } catch let error as Deluge.Error {
                     switch error {
                     case let .response(.message(error)):
                         #expect(error == "Unknown method")
@@ -38,7 +38,7 @@ struct BadMethodTests {
     @Test
     func test_badMethod_concurrency() async throws {
         let bad = DelugeRequest<EmptyResponse>(method: "bad", args: []) { _ in
-            throw DelugeClient.Error.response(.message(nil))
+            throw Deluge.Error.response(.message(nil))
         }
 
         do {

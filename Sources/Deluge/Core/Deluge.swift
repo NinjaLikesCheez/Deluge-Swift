@@ -11,20 +11,26 @@ import Logging
     import FoundationNetworking
 #endif
 
-/// Convenience typealias for the Deluge client.
-public typealias DelugeClient = Client<DelugeResponseError>
-
 /// A Deluge JSON-RPC API client.
-public final class Deluge: Sendable {
+public final class Deluge: Client, Sendable {
+    public typealias ResponseError = DelugeResponseError
+    public typealias Error = ClientError<ResponseError>
+
     /// The URL of the Deluge server.
     public let baseURL: URL
     /// The password used for authentication.
     public let password: String
     /// Basic authentication to be added to Authorization header.
     public let basicAuthentication: BasicAuthentication?
+    public let defaultHeaders: APIClient.HTTPFields?
 
-    /// The underlying API Client.
-    private let client: DelugeClient
+    public let decoder: JSONDecoder = .init()
+
+    public let validate: @Sendable (Data, HTTPURLResponse) throws(APIClient.ClientError<DelugeResponseError>) -> Void
+
+    public let prepare: @Sendable (URLRequest) -> URLRequest
+
+    public let session: URLSession = .shared
 
     private let logger = Logger(label: "Deluge")
 
@@ -33,7 +39,7 @@ public final class Deluge: Sendable {
     ///   - baseURL: The URL of the Deluge server.
     ///   - password: The password used for authentication.
     public init(baseURL: URL, password: String, basicAuthentication: BasicAuthentication? = nil) {
-        self.baseURL = baseURL
+        self.baseURL = baseURL.appending(path: "json")
         self.password = password
         self.basicAuthentication = basicAuthentication
 
@@ -41,16 +47,13 @@ public final class Deluge: Sendable {
         if let basicAuthentication {
             headers["Authorization"] = basicAuthentication.encoded
         }
-
-        client = .init(
-            baseURL: self.baseURL.appending(path: "json"),
-            defaultHeaders: headers,
-            validate: Self.validate
-        )
+        defaultHeaders = headers
+        prepare = { $0 }
+        validate = Self.validate
     }
 
     @Sendable
-    private static func validate(data: Data, response: HTTPURLResponse) throws(DelugeClient.Error) {
+    private static func validate(data: Data, response: HTTPURLResponse) throws(Deluge.Error) {
         guard response.statusCode == 200 else {
             throw .response(.message("Server returned non-200 status code: \(response.statusCode)"))
         }
@@ -73,10 +76,10 @@ public final class Deluge: Sendable {
         }
 
         let parts = [
-            // "<class 'deluge.error.AddTorrentError'>: Torrent already in session",
+            // "<class 'Deluge.Error.AddTorrentError'>: Torrent already in session",
             "Torrent already in session",
-            // "<class 'deluge.error.WrappedException'>: type <class 'deluge.error.AddTorrentError'> not handled",
-            "deluge.error.AddTorrentError",
+            // "<class 'Deluge.Error.WrappedException'>: type <class 'Deluge.Error.AddTorrentError'> not handled",
+            "Deluge.Error.AddTorrentError",
         ]
 
         if parts.map({ error.message.contains($0) }).contains(true) {
@@ -93,45 +96,45 @@ public final class Deluge: Sendable {
         /// Sends a request to the server.
         /// - Parameter request: The request to be sent to the server.
         /// - Returns: A publisher that emits a value when the request completes.
-        func request<Value: Decodable>(_ request: DelugeRequest<Value>) -> AnyPublisher<Value, DelugeClient.Error> {
-            let retryIfNeeded = { (error: DelugeClient.Error) -> AnyPublisher<Value, DelugeClient.Error> in
+        func request<Value: Decodable>(_ request: DelugeRequest<Value>) -> AnyPublisher<Value, Deluge.Error> {
+            let retryIfNeeded = { (error: Deluge.Error) -> AnyPublisher<Value, Deluge.Error> in
                 switch error {
                 case .response(.unconnected):
                     // Attempt to connect to the host, if there is only one host
-                    self.request(.hosts)
+                    self.send(request: DelugeRequest<[Host]>.hosts)
                         .flatMap { hosts in
                             guard hosts.count == 1, let host = hosts.first else {
-                                return Fail<EmptyResponse, DelugeClient.Error>(error: .response(.unconnected))
+                                return Fail<EmptyResponse, Deluge.Error>(error: .response(.unconnected))
                                     .eraseToAnyPublisher()
                             }
 
-                            return self.request(.connect(to: host.id))
+                            return self.send(request: DelugeRequest<EmptyResponse>.connect(to: host.id))
                                 .eraseToAnyPublisher()
                         }
                         .flatMap { _ in
-                            self.client.request(request)
+                            self.send(request: request)
                                 .eraseToAnyPublisher()
                         }
                         .eraseToAnyPublisher()
                 case .response(.unauthenticated):
-                    self.request(.authenticate(self.password))
+                    self.send(request: DelugeRequest<Bool>.authenticate(self.password))
                         .flatMap { authenticated in
                             if !authenticated {
-                                return Fail<Value, DelugeClient.Error>(
-                                    error: DelugeClient.Error.response(.unauthenticated)
+                                return Fail<Value, Deluge.Error>(
+                                    error: Deluge.Error.response(.unauthenticated)
                                 ).eraseToAnyPublisher()
                             }
 
-                            return self.client.request(request)
+                            return self.send(request: request)
                         }
                         .eraseToAnyPublisher()
                 default:
-                    Fail<Value, DelugeClient.Error>(error: error)
+                    Fail<Value, Deluge.Error>(error: error)
                         .eraseToAnyPublisher()
                 }
             }
 
-            return client.request(request)
+            return send(request: request)
                 .catch(retryIfNeeded)
                 .eraseToAnyPublisher()
         }
@@ -144,23 +147,23 @@ public extension Deluge {
     /// - Parameter request: The request to be sent to the server.
     /// - Returns: A publisher that emits a value when the request completes.
     @discardableResult
-    func request<Value: Decodable>(_ request: DelugeRequest<Value>) async throws(DelugeClient.Error) -> Value {
+    func request<Value: Decodable>(_ request: DelugeRequest<Value>) async throws(Deluge.Error) -> Value {
         do {
-            return try await client.request(request)
+            return try await send(request: request)
         } catch {
             switch error {
             case .response(.unconnected):
-                let hosts = try await client.request(DelugeRequest<[Host]>.hosts)
+                let hosts = try await self.request(DelugeRequest<[Host]>.hosts)
                 guard hosts.count == 1, let host = hosts.first else {
                     throw error
                 }
 
-                try await client.request(DelugeRequest<EmptyResponse>.connect(to: host.id))
+                try await send(request: DelugeRequest<EmptyResponse>.connect(to: host.id))
 
-                return try await client.request(request)
+                return try await send(request: request)
             case .response(.unauthenticated):
-                try await client.request(DelugeRequest<Bool>.authenticate(password))
-                return try await client.request(request)
+                try await send(request: DelugeRequest<Bool>.authenticate(password))
+                return try await send(request: request)
             default:
                 throw error
             }

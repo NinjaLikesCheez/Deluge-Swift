@@ -24,7 +24,7 @@ public extension DelugeRequest {
                 let response = try JSONDecoder().decode(Deluge.Response<ConnectedResponse>.self, from: data)
 
                 guard response.result.connected else {
-                    throw DelugeClient.Error.response(.unconnected)
+                    throw Deluge.Error.response(.unconnected)
                 }
 
                 return try JSONDecoder().decode(Deluge.Response<TorrentsAndLabels>.self, from: data).result

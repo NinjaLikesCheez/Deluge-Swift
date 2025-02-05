@@ -49,11 +49,11 @@ public struct DelugeRequest<DelugeResponse: Decodable>: Request {
                 return response.result
             }
 
-            throw DelugeClient.ResponseError.fromAPIError(error)
-        } catch let error as DelugeClient.Error {
+            throw Deluge.ResponseError.fromAPIError(error)
+        } catch let error as Deluge.Error {
             throw error
         } catch {
-            throw DelugeClient.Error.decoding(error)
+            throw Deluge.Error.decoding(error)
         }
     }
 }

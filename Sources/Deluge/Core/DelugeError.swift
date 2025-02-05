@@ -47,7 +47,7 @@ extension DelugeResponseError {
             // There is a bug in deluge that adding a torrent that exists will return a stacktrace of a python
             // exception.
             // https://dev.deluge-torrent.org/ticket/3507
-            if error.message.contains("<class \'deluge.error.AddTorrentError\'>: Torrent already in session") {
+            if error.message.contains("<class \'Deluge.Error.AddTorrentError\'>: Torrent already in session") {
                 return .torrentAlreadyInSession
             }
         case _:
