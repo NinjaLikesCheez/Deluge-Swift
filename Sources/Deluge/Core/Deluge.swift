@@ -43,11 +43,7 @@ public final class Deluge: Client, Sendable {
         self.password = password
         self.basicAuthentication = basicAuthentication
 
-        var headers = ["Content-Type": "application/json"]
-        if let basicAuthentication {
-            headers["Authorization"] = basicAuthentication.encoded
-        }
-        defaultHeaders = headers
+        defaultHeaders = ["Content-Type": "application/json"]
         prepare = { $0 }
         validate = Self.validate
     }
@@ -167,22 +163,6 @@ public extension Deluge {
             default:
                 throw error
             }
-        }
-    }
-}
-
-public extension Deluge {
-    struct BasicAuthentication: Equatable, Codable, Sendable {
-        public let username: String
-        public let password: String
-
-        public init(username: String, password: String) {
-            self.username = username
-            self.password = password
-        }
-
-        var encoded: String {
-            Data("\(username):\(password)".utf8).base64EncodedString()
         }
     }
 }

@@ -14,6 +14,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/NinjaLikesCheez/swift-api-client.git", branch: "main"),
+        // .package(path: "../swift-api-client"),
     ],
     targets: [
         .target(

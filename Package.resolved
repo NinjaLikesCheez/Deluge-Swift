@@ -1,5 +1,5 @@
 {
-  "originHash" : "c01a0a14d5860da3ed21eed503519e114fce5973a11225d84086490e43a8418b",
+  "originHash" : "46971343b54e709ad0bd02cefa661a1aead238e0963fb8baa54adb6d7a879b1c",
   "pins" : [
     {
       "identity" : "swift-api-client",
@@ -7,7 +7,7 @@
       "location" : "https://github.com/NinjaLikesCheez/swift-api-client.git",
       "state" : {
         "branch" : "main",
-        "revision" : "a32b0f61efab2a458cf33e7e51f3947cf701eb99"
+        "revision" : "8d3d63fa7d4312182095df236156186b3f55f6b3"
       }
     },
     {
