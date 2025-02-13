@@ -13,7 +13,7 @@ let package = Package(
         .library(name: "Deluge", targets: ["Deluge"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/NinjaLikesCheez/swift-api-client.git", branch: "main"),
+        .package(url: "https://github.com/NinjaLikesCheez/swift-api-client", branch: "main"),
         // .package(path: "../swift-api-client"),
     ],
     targets: [
