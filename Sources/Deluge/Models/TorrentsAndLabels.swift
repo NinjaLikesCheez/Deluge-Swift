@@ -17,7 +17,14 @@ public struct TorrentsAndLabels: Decodable, Sendable {
 
         connected = try container.decode(Bool.self, forKey: .connected)
         torrents = torrentsDictionary.map { .init(hash: $0.key, torrent: $0.value) }
-        labels = try container.decodeIfPresent([Label].self, forKey: .labels) ?? []
+        let tempLabels = torrentsDictionary
+            .filter { !($0.value.label?.isEmpty ?? true) }
+            .compactMap { $0.value.label }
+            .reduce(into: [String: Int]()) { partialResult, label in
+                partialResult[label, default: 0] += 1
+            }
+
+        labels = tempLabels.map { .init(name: $0.key, count: $0.value) }
     }
 }
 
