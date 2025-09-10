@@ -1,4 +1,6 @@
+@_exported import APIClient
 import Foundation
+import Logging
 
 #if canImport(Combine)
     import Combine
@@ -10,205 +12,157 @@ import Foundation
 #endif
 
 /// A Deluge JSON-RPC API client.
-public final class Deluge {
-    /// The `URLSession` to use for requests.
-    private lazy var session: URLSession = .shared
+public final class Deluge: Client, Sendable {
+    public typealias ResponseError = DelugeResponseError
+    public typealias Error = ClientError<ResponseError>
 
     /// The URL of the Deluge server.
-    let baseURL: URL
+    public let baseURL: URL
     /// The password used for authentication.
-    let password: String
+    public let password: String
     /// Basic authentication to be added to Authorization header.
-    let basicAuthentication: BasicAuthentication?
+    public let basicAuthentication: BasicAuthentication?
+    public let defaultHeaders: APIClient.HTTPFields?
+
+    public let decoder: JSONDecoder = .init()
+
+    public let validate: @Sendable (Data, HTTPURLResponse) throws(APIClient.ClientError<DelugeResponseError>) -> Void
+
+    public let prepare: @Sendable (URLRequest) -> URLRequest
+
+    public let session: URLSession = .shared
+
+    private let logger = Logger(label: "Deluge")
 
     /// Creates a Deluge client to interact with the given server URL.
     /// - Parameters:
     ///   - baseURL: The URL of the Deluge server.
     ///   - password: The password used for authentication.
     public init(baseURL: URL, password: String, basicAuthentication: BasicAuthentication? = nil) {
-        self.baseURL = baseURL
+        self.baseURL = baseURL.appending(path: "json")
         self.password = password
         self.basicAuthentication = basicAuthentication
+
+        defaultHeaders = ["Content-Type": "application/json"]
+        prepare = { $0 }
+        validate = Self.validate
     }
 
-    /// Attempts to create a `URLRequest` from a `Request`.
-    /// - Parameter request: The request definition to be converted in to a `URLRequest`.
-    /// - Returns: A `Result` containing either the created `URLRequest` or an error if the request was unable to be
-    /// serialized to JSON.
-    private func urlRequest<Value>(from request: Request<Value>) -> Result<URLRequest, DelugeError> {
-        let url = baseURL.appendingPathComponent("json")
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
+    @Sendable
+    private static func validate(data: Data, response: HTTPURLResponse) throws(Deluge.Error) {
+        guard response.statusCode == 200 else {
+            throw .response(.message("Server returned non-200 status code: \(response.statusCode)"))
+        }
+
+        // Deluge returns 200, even for errors - which are wrapped in the response
+        let response: Response<EmptyResponse>
 
         do {
-            urlRequest.httpBody = try JSONSerialization.data(withJSONObject: [
-                "id": 1,
-                "method": request.method,
-                "params": request.args,
-            ], options: [])
+            response = try JSONDecoder().decode(Response<EmptyResponse>.self, from: data)
+        } catch let error as DecodingError {
+            throw .decoding(error)
         } catch {
-            return .failure(.encoding(error))
+            throw .response(.unknown(error))
         }
 
-        if let basicAuthentication {
-            urlRequest.setValue("Basic \(basicAuthentication.encoded)", forHTTPHeaderField: "Authorization")
+        guard let error = response.error else { return }
+
+        if error.code == 1 {
+            throw .response(.unauthenticated)
         }
 
-        return .success(urlRequest)
+        let parts = [
+            // "<class 'Deluge.Error.AddTorrentError'>: Torrent already in session",
+            "Torrent already in session",
+            // "<class 'Deluge.Error.WrappedException'>: type <class 'Deluge.Error.AddTorrentError'> not handled",
+            "Deluge.Error.AddTorrentError",
+        ]
+
+        if parts.map({ error.message.contains($0) }).contains(true) {
+            throw .response(.torrentAlreadyInSession)
+        }
+
+        throw .response(.message(error.message))
     }
 }
 
 #if canImport(Combine)
     /// Combine-powered extensions for `Deluge`.
-    extension Deluge {
+    public extension Deluge {
         /// Sends a request to the server.
         /// - Parameter request: The request to be sent to the server.
         /// - Returns: A publisher that emits a value when the request completes.
-        public func request<Value>(_ request: Request<Value>) -> AnyPublisher<Value, DelugeError> {
-            send(request: request.prepare(request, self), authenticateIfNeeded: true)
-                .flatMap { request.transform($0).publisher.eraseToAnyPublisher() }
-                .eraseToAnyPublisher()
-        }
+        func request<Value: Decodable>(_ request: DelugeRequest<Value>) -> AnyPublisher<Value, Deluge.Error> {
+            let retryIfNeeded = { (error: Deluge.Error) -> AnyPublisher<Value, Deluge.Error> in
+                switch error {
+                case .response(.unconnected):
+                    // Attempt to connect to the host, if there is only one host
+                    self.send(request: DelugeRequest<[Host]>.hosts)
+                        .flatMap { hosts in
+                            guard hosts.count == 1, let host = hosts.first else {
+                                return Fail<EmptyResponse, Deluge.Error>(error: .response(.unconnected))
+                                    .eraseToAnyPublisher()
+                            }
 
-        /// Sends a request to the server, optionally handling authentication.
-        ///
-        /// - Parameters:
-        ///   - request: The request to be sent to the server.
-        ///   - authenticateIfNeeded: Whether authentication should be attempted if the server responds that the client
-        ///   is unauthenticated.
-        /// - Returns: A publisher that emits the decoded server response.
-        private func send<Value>(
-            request: Request<Value>,
-            authenticateIfNeeded: Bool
-        ) -> AnyPublisher<[String: Any], DelugeError> {
-            let retryIfNeeded = { (error: DelugeError) -> AnyPublisher<[String: Any], DelugeError> in
-                guard case .serverError(.unauthenticated) = error, authenticateIfNeeded else {
-                    return Fail(error: error).eraseToAnyPublisher()
+                            return self.send(request: DelugeRequest<EmptyResponse>.connect(to: host.id))
+                                .eraseToAnyPublisher()
+                        }
+                        .flatMap { _ in
+                            self.send(request: request)
+                                .eraseToAnyPublisher()
+                        }
+                        .eraseToAnyPublisher()
+                case .response(.unauthenticated):
+                    self.send(request: DelugeRequest<Bool>.authenticate(self.password))
+                        .flatMap { authenticated in
+                            if !authenticated {
+                                return Fail<Value, Deluge.Error>(
+                                    error: Deluge.Error.response(.unauthenticated)
+                                ).eraseToAnyPublisher()
+                            }
+
+                            return self.send(request: request)
+                        }
+                        .eraseToAnyPublisher()
+                default:
+                    Fail<Value, Deluge.Error>(error: error)
+                        .eraseToAnyPublisher()
                 }
-
-                return self.request(.authenticate)
-                    .flatMap { self.send(request: request, authenticateIfNeeded: false) }
-                    .eraseToAnyPublisher()
             }
 
-            return urlRequest(from: request).publisher
-                .flatMap { self.session.dataTaskPublisher(for: $0).mapError { .request(.urlError($0)) } }
-                .flatMap(decode(data:response:))
+            return send(request: request)
                 .catch(retryIfNeeded)
                 .eraseToAnyPublisher()
-        }
-
-        /// Attempts to decode a server response in to a dictionary.
-        /// - Parameters:
-        ///   - data: The data returned from the server.
-        ///   - response: The `URLResponse` describing the server response.
-        /// - Returns: A publisher that emits the decoded dictionary.
-        private func decode(data: Data, response: URLResponse) -> AnyPublisher<[String: Any], DelugeError> {
-            let dict: [String: Any]
-
-            do {
-                guard let object = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
-                    return Fail(error: .unexpectedResponse).eraseToAnyPublisher()
-                }
-
-                dict = object
-            } catch {
-                return Fail(error: .decoding(error)).eraseToAnyPublisher()
-            }
-
-            if let error = dict["error"] as? [String: Any] {
-                return Fail(error: .serverError(.fromAPIError(error))).eraseToAnyPublisher()
-            }
-
-            return Just(dict).setFailureType(to: DelugeError.self).eraseToAnyPublisher()
         }
     }
 #endif
 
 /// Swift Concurrency powered extensions for `Deluge`.
-extension Deluge {
+public extension Deluge {
     /// Sends a request to the server.
     /// - Parameter request: The request to be sent to the server.
     /// - Returns: A publisher that emits a value when the request completes.
-    public func request<Value>(_ request: Request<Value>) async throws(DelugeError) -> Value {
-        try request.transform(
-            await send(
-                request: request.prepare(request, self),
-                authenticateIfNeeded: true
-            )
-        ).get()
-    }
-
-    /// Sends a request to the server, optionally handling authentication.
-    ///
-    /// - Parameters:
-    ///   - request: The request to be sent to the server.
-    ///   - authenticateIfNeeded: Whether authentication should be attempted if the server responds that the client is
-    ///   unauthenticated.
-    /// - Returns: A publisher that emits the decoded server response.
-    private func send<Value>(
-        request: Request<Value>,
-        authenticateIfNeeded: Bool
-    ) async throws(DelugeError) -> [String: Any] {
-        let urlRequest = try urlRequest(from: request).get()
-
-        let data: Data
-        let response: URLResponse
+    @discardableResult
+    func request<Value: Decodable>(_ request: DelugeRequest<Value>) async throws(Deluge.Error) -> Value {
         do {
-            (data, response) = try await session.data(for: urlRequest)
-        } catch let error as URLError {
-            throw .request(.urlError(error))
+            return try await send(request: request)
         } catch {
-            throw .request(.unknown(error))
-        }
+            switch error {
+            case .response(.unconnected):
+                let hosts = try await self.request(DelugeRequest<[Host]>.hosts)
+                guard hosts.count == 1, let host = hosts.first else {
+                    throw error
+                }
 
-        do {
-            return try decode(data: data, response: response)
-        } catch {
-            guard case .serverError(.unauthenticated) = error, authenticateIfNeeded else {
+                try await send(request: DelugeRequest<EmptyResponse>.connect(to: host.id))
+
+                return try await send(request: request)
+            case .response(.unauthenticated):
+                try await send(request: DelugeRequest<Bool>.authenticate(password))
+                return try await send(request: request)
+            default:
                 throw error
             }
-
-            try await self.request(.authenticate)
-            return try await send(request: request, authenticateIfNeeded: false)
-        }
-    }
-
-    /// Attempts to decode a server response in to a dictionary.
-    /// - Parameters:
-    ///   - data: The data returned from the server.
-    ///   - response: The `URLResponse` describing the server response.
-    /// - Throws: A `DelugeError` if the response is malformed or contains an error.
-    /// - Returns: The decoded dictionary.
-    private func decode(data: Data, response: URLResponse) throws(DelugeError) -> [String: Any] {
-        let dict: [String: Any]
-        do {
-            dict = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] ?? [:]
-        } catch {
-            throw .decoding(error)
-        }
-
-        if let error = dict["error"] as? [String: Any] {
-            throw .serverError(.fromAPIError(error))
-        }
-
-        return dict
-    }
-}
-
-public extension Deluge {
-    struct BasicAuthentication: Equatable, Codable {
-        public let username: String
-        public let password: String
-
-        public init(username: String, password: String) {
-            self.username = username
-            self.password = password
-        }
-
-        var encoded: String {
-            Data("\(username):\(password)".utf8).base64EncodedString()
         }
     }
 }

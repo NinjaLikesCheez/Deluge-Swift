@@ -1,4 +1,6 @@
-public extension Request {
+import APIClient
+
+public extension DelugeRequest {
     /// Sets the label for a torrent.
     ///
     /// RPC Method: `label.set_torrent`
@@ -6,7 +8,7 @@ public extension Request {
     /// - Parameters:
     ///   - hash: The hash of the torrent whose label should be set.
     ///   - label: The name of the label to set.
-    static func setLabel(hash: String, label: String) -> Request<Void> {
+    static func setLabel(hash: String, label: String) -> DelugeRequest<EmptyResponse> {
         .init(method: "label.set_torrent", args: [hash, label])
     }
 }
