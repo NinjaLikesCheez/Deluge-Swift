@@ -1,13 +1,13 @@
 {
-  "originHash" : "88fcc1253b8d5ff12739360adde742724e21334f705209283a803b7bf77a6880",
+  "originHash" : "32483b428b6ff53cc368ecc8eaea4cec043038b42fb5c2d8d1e47ce95545f9ba",
   "pins" : [
     {
       "identity" : "swift-api-client",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/NinjaLikesCheez/swift-api-client",
       "state" : {
-        "branch" : "main",
-        "revision" : "8d3d63fa7d4312182095df236156186b3f55f6b3"
+        "revision" : "c6ca809a7884c46f4ad6bcc9164ca7ecc8408114",
+        "version" : "0.0.1"
       }
     },
     {
