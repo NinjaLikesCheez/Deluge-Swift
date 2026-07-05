@@ -39,6 +39,7 @@ private struct UnhashedTorrent: Decodable, Sendable {
     let peers: Int?
     let progress: Float?
     let seeds: Int?
+    let seedingTime: TimeInterval?
     let size: Int64?
     let state: Torrent.State?
     let totalPeers: Int?
@@ -58,6 +59,7 @@ private struct UnhashedTorrent: Decodable, Sendable {
         case peers = "num_peers"
         case progress
         case seeds = "num_seeds"
+        case seedingTime = "seeding_time"
         case size = "total_size"
         case state
         case totalPeers = "total_peers"
@@ -90,6 +92,7 @@ private struct UnhashedTorrent: Decodable, Sendable {
             progress = nil
         }
         seeds = try container.decodeIfPresent(Int.self, forKey: .seeds)
+        seedingTime = try container.decodeIfPresent(TimeInterval.self, forKey: .seedingTime)
         size = try container.decodeIfPresent(Int64.self, forKey: .size)
         state = try container.decodeIfPresent(Torrent.State.self, forKey: .state)
         totalPeers = try container.decodeIfPresent(Int.self, forKey: .totalPeers)
@@ -114,6 +117,7 @@ private extension Torrent {
             peers: torrent.peers,
             progress: torrent.progress,
             seeds: torrent.seeds,
+            seedingTime: torrent.seedingTime,
             size: torrent.size,
             state: torrent.state,
             totalPeers: torrent.totalPeers,

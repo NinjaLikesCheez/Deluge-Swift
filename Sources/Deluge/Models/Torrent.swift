@@ -24,6 +24,8 @@ public struct Torrent: Equatable, Decodable, Sendable {
     public var progress: Float?
     /// The number of connected seeds for the torrent.
     public var seeds: Int?
+    /// The number of seconds the torrent has spent seeding.
+    public var seedingTime: TimeInterval?
     /// The size of the torrent contents in bytes.
     public var size: Int64?
     /// The state of the torrent.
@@ -52,6 +54,7 @@ public struct Torrent: Equatable, Decodable, Sendable {
         peers: Int? = nil,
         progress: Float? = nil,
         seeds: Int? = nil,
+        seedingTime: TimeInterval? = nil,
         size: Int64? = nil,
         state: Torrent.State? = nil,
         totalPeers: Int? = nil,
@@ -71,6 +74,7 @@ public struct Torrent: Equatable, Decodable, Sendable {
         self.peers = peers
         self.progress = progress
         self.seeds = seeds
+        self.seedingTime = seedingTime
         self.size = size
         self.state = state
         self.totalPeers = totalPeers
@@ -122,6 +126,8 @@ public extension Torrent {
         case progress
         /// Requests the key `num_seeds` from the API.
         case seeds = "num_seeds"
+        /// Requests the key `seeding_time` from the API.
+        case seedingTime = "seeding_time"
         /// Requests the key `total_size` from the API.
         case size = "total_size"
         /// Requests the key `state` from the API.
