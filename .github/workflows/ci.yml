@@ -16,13 +16,5 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Cache tools
-      id: cache-tools
-      uses: actions/cache@v2
-      with:
-        path: |
-            .tools/.bin
-        key: ${{ runner.os }}-${{ hashFiles('tools/*.sh') }}
-
     - name: Run CI script
       run: ./scripts/run_ci.sh

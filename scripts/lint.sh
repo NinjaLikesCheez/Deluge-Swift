@@ -2,4 +2,4 @@
 set -eu
 
 cd "$(dirname "$(realpath "$0")")/../"
-tools/swiftlint.sh Package.swift Sources Tests "$@"
+swift-format lint --recursive --parallel --configuration .swift-format Package.swift Sources Tests "$@"
