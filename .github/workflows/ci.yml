@@ -2,27 +2,19 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 env:
-  DEVELOPER_DIR: /Applications/Xcode_16.app/Contents/Developer
+  DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
 
 jobs:
   build:
     runs-on: macos-15
 
     steps:
-    - uses: actions/checkout@v2
-
-    - name: Cache tools
-      id: cache-tools
-      uses: actions/cache@v2
-      with:
-        path: |
-            .tools/.bin
-        key: ${{ runner.os }}-${{ hashFiles('tools/*.sh') }}
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
     - name: Run CI script
       run: ./scripts/run_ci.sh

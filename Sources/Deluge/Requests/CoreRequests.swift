@@ -2,167 +2,169 @@ import APIClient
 import Foundation
 
 public extension DelugeRequest {
-    /// Adds a torrent using a URL to a local torrent file.
-    ///
-    /// RPC Method: `core.add_torrent_file`
-    ///
-    /// Result: The added torrent's hash.
-    ///
-    /// - Parameter fileURL: The URL of the local torrent file to add.
-    static func add(fileURL: URL) -> DelugeRequest<String> {
-        let fileName = fileURL.lastPathComponent
-        let data = FileManager.default.contents(atPath: fileURL.path)?.base64EncodedString() ?? ""
-        return .init(
-            method: "core.add_torrent_file",
-            args: [fileName, data, [String: Any]()]
-        )
-    }
+	/// Adds a torrent using a URL to a local torrent file.
+	///
+	/// RPC Method: `core.add_torrent_file`
+	///
+	/// Result: The added torrent's hash.
+	///
+	/// - Parameter fileURL: The URL of the local torrent file to add.
+	static func add(fileURL: URL) -> DelugeRequest<String> {
+		let fileName = fileURL.lastPathComponent
+		let data = FileManager.default.contents(atPath: fileURL.path)?.base64EncodedString() ?? ""
+		return .init(
+			method: "core.add_torrent_file",
+			args: [fileName, data, [String: Any]()]
+		)
+	}
 
-    /// Adds multiple torrents using multiple URLs to local torrent files.
-    ///
-    /// RPC Method: `core.add_torrent_files`
-    ///
-    /// - Parameter fileURLs: The URLs of the local torrent files to add.
-    static func add(fileURLs: [URL]) -> DelugeRequest<EmptyResponse> {
-        let files = fileURLs.map { url -> [Any] in
-            let fileName = url.lastPathComponent
-            let data = FileManager.default.contents(atPath: url.path)?.base64EncodedString() ?? ""
-            return [fileName, data, [String: Any]()]
-        }
-        return .init(method: "core.add_torrent_files", args: [files])
-    }
+	/// Adds multiple torrents using multiple URLs to local torrent files.
+	///
+	/// RPC Method: `core.add_torrent_files`
+	///
+	/// - Parameter fileURLs: The URLs of the local torrent files to add.
+	static func add(fileURLs: [URL]) -> DelugeRequest<EmptyResponse> {
+		let files = fileURLs.map { url -> [Any] in
+			let fileName = url.lastPathComponent
+			let data = FileManager.default.contents(atPath: url.path)?.base64EncodedString() ?? ""
+			return [fileName, data, [String: Any]()]
+		}
+		return .init(method: "core.add_torrent_files", args: [files])
+	}
 
-    /// Adds a torrent using a magnet URL.
-    ///
-    /// RPC Method: `core.add_torrent_magnet`
-    ///
-    /// Result: The added torrent's hash.
-    ///
-    /// - Parameter url: The magnet URL to add.
-    static func add(magnetURL: URL) -> DelugeRequest<String> {
-        .init(
-            method: "core.add_torrent_magnet",
-            args: [magnetURL.absoluteString, [String: Any]()]
-        )
-    }
+	/// Adds a torrent using a magnet URL.
+	///
+	/// RPC Method: `core.add_torrent_magnet`
+	///
+	/// Result: The added torrent's hash.
+	///
+	/// - Parameter url: The magnet URL to add.
+	static func add(magnetURL: URL) -> DelugeRequest<String> {
+		.init(
+			method: "core.add_torrent_magnet",
+			args: [magnetURL.absoluteString, [String: Any]()]
+		)
+	}
 
-    /// Adds a torrent using a web URL to a torrent file.
-    ///
-    /// RPC Method: `core.add_torrent_url`
-    ///
-    /// - Parameter url: The URL of the torrent file to add.
-    static func add(url: URL) -> DelugeRequest<EmptyResponse> {
-        .init(method: "core.add_torrent_url", args: [url.absoluteString, [String: Any]()])
-    }
+	/// Adds a torrent using a web URL to a torrent file.
+	///
+	/// RPC Method: `core.add_torrent_url`
+	///
+	/// - Parameter url: The URL of the torrent file to add.
+	static func add(url: URL) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.add_torrent_url", args: [url.absoluteString, [String: Any]()])
+	}
 
-    /// Forces a reannounce for torrents with the given hashes.
-    ///
-    /// RPC Method: `core.force_reannounce`
-    ///
-    /// - Parameter hashes: The torrent hashes to force a reannounce on.
-    static func reannounce(hashes: [String]) -> DelugeRequest<EmptyResponse> {
-        .init(method: "core.force_reannounce", args: [hashes])
-    }
+	/// Forces a reannounce for torrents with the given hashes.
+	///
+	/// RPC Method: `core.force_reannounce`
+	///
+	/// - Parameter hashes: The torrent hashes to force a reannounce on.
+	static func reannounce(hashes: [String]) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.force_reannounce", args: [hashes])
+	}
 
-    /// Rechecks torrents with the given hashes.
-    ///
-    /// RPC Method: `core.force_recheck`
-    ///
-    /// - Parameter hashes: The torrent hashes to recheck.
-    static func recheck(hashes: [String]) -> DelugeRequest<EmptyResponse> {
-        .init(method: "core.force_recheck", args: [hashes])
-    }
+	/// Rechecks torrents with the given hashes.
+	///
+	/// RPC Method: `core.force_recheck`
+	///
+	/// - Parameter hashes: The torrent hashes to recheck.
+	static func recheck(hashes: [String]) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.force_recheck", args: [hashes])
+	}
 
-    /// Moves the storage for torrents with the given hashes.
-    ///
-    /// RPC Method: `core.move_storage`
-    ///
-    /// - Parameters:
-    ///   - hashes: The torrent hashes whose storage should be moved.
-    ///   - path: The new path where the torrents' data should be stored.
-    static func move(hashes: [String], path: String) -> DelugeRequest<EmptyResponse> {
-        .init(method: "core.move_storage", args: [hashes, path])
-    }
+	/// Moves the storage for torrents with the given hashes.
+	///
+	/// RPC Method: `core.move_storage`
+	///
+	/// - Parameters:
+	///   - hashes: The torrent hashes whose storage should be moved.
+	///   - path: The new path where the torrents' data should be stored.
+	static func move(hashes: [String], path: String) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.move_storage", args: [hashes, path])
+	}
 
-    /// Pauses torrents with the given hashes.
-    ///
-    /// RPC Method: `core.pause_torrents`
-    ///
-    /// - Parameter hashes: The torrent hashes to pause.
-    static func pause(hashes: [String]) -> DelugeRequest<EmptyResponse> {
-        .init(method: "core.pause_torrents", args: [hashes])
-    }
+	/// Pauses torrents with the given hashes.
+	///
+	/// RPC Method: `core.pause_torrents`
+	///
+	/// - Parameter hashes: The torrent hashes to pause.
+	static func pause(hashes: [String]) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.pause_torrents", args: [hashes])
+	}
 
-    /// Removes torrents with the given hashes.
-    ///
-    /// RPC Method: `core.remove_torrents`
-    ///
-    /// Result: An array of torrent hashes and error messages, or an empty array if no errors occurred.
-    ///
-    /// - Parameters:
-    ///   - hashes: The torrent hashes to remove.
-    ///   - removeData: Whether the torrents' data should be removed.
-    static func remove(hashes: [String], removeData: Bool) -> DelugeRequest<[RemoveTorrentError]> {
-        .init(
-            method: "core.remove_torrents",
-            args: [hashes, removeData],
-            transform: { data in
-                let response = try JSONDecoder().decode(Deluge.Response<[[String]]>.self, from: data)
+	/// Removes torrents with the given hashes.
+	///
+	/// RPC Method: `core.remove_torrents`
+	///
+	/// Result: An array of torrent hashes and error messages, or an empty array if no errors occurred.
+	///
+	/// - Parameters:
+	///   - hashes: The torrent hashes to remove.
+	///   - removeData: Whether the torrents' data should be removed.
+	static func remove(hashes: [String], removeData: Bool) -> DelugeRequest<[RemoveTorrentError]> {
+		.init(
+			method: "core.remove_torrents",
+			args: [hashes, removeData],
+			transform: { data in
+				let response = try JSONDecoder().decode(Deluge.Response<[[String]]>.self, from: data)
 
-                var errors = [RemoveTorrentError]()
-                for result in response.result {
-                    assert(result.count.isMultiple(of: 2))
+				var errors = [RemoveTorrentError]()
+				for result in response.result {
+					assert(result.count.isMultiple(of: 2))
 
-                    var index = 0
-                    while index < result.count {
-                        errors.append(.init(hash: result[index], error: result[index + 1]))
-                        index += 2
-                    }
-                }
+					var index = 0
+					while index < result.count {
+						errors.append(.init(hash: result[index], error: result[index + 1]))
+						index += 2
+					}
+				}
 
-                return errors
-            }
-        )
-    }
+				return errors
+			}
+		)
+	}
 
-    /// Resumes torrents with the given hashes.
-    ///
-    /// RPC Method: `core.resume_torrents`
-    ///
-    /// - Parameter hashes: The torrent hashes to resume.
-    static func resume(hashes: [String]) -> DelugeRequest<EmptyResponse> {
-        .init(method: "core.resume_torrents", args: [hashes])
-    }
+	/// Resumes torrents with the given hashes.
+	///
+	/// RPC Method: `core.resume_torrents`
+	///
+	/// - Parameter hashes: The torrent hashes to resume.
+	static func resume(hashes: [String]) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.resume_torrents", args: [hashes])
+	}
 
-    /// Sets options for torrents with the given hashes.
-    ///
-    /// RPC Method: `core.set_torrent_options`
-    ///
-    /// - Parameters:
-    ///   - hashes: The torrent hashes to update.
-    ///   - options: The options to set on the torrents.
-    static func setOptions(hashes: [String], options: [TorrentOption]) -> DelugeRequest<EmptyResponse> {
-        .init(method: "core.set_torrent_options", args: [
-            hashes,
-            options.reduce(into: [String: Any]()) { $0[$1.key] = $1.value },
-        ])
-    }
+	/// Sets options for torrents with the given hashes.
+	///
+	/// RPC Method: `core.set_torrent_options`
+	///
+	/// - Parameters:
+	///   - hashes: The torrent hashes to update.
+	///   - options: The options to set on the torrents.
+	static func setOptions(hashes: [String], options: [TorrentOption]) -> DelugeRequest<EmptyResponse> {
+		.init(
+			method: "core.set_torrent_options",
+			args: [
+				hashes,
+				options.reduce(into: [String: Any]()) { $0[$1.key] = $1.value },
+			])
+	}
 
-    /// Enables a plugin.
-    ///
-    /// RPC Method: `core.enable_plugin`
-    ///
-    /// - Parameter plugin: The plugin to enable.
-    static func enablePlugin(_ plugin: Plugin) -> DelugeRequest<Bool> {
-        .init(method: "core.enable_plugin", args: [plugin.name])
-    }
+	/// Enables a plugin.
+	///
+	/// RPC Method: `core.enable_plugin`
+	///
+	/// - Parameter plugin: The plugin to enable.
+	static func enablePlugin(_ plugin: Plugin) -> DelugeRequest<Bool> {
+		.init(method: "core.enable_plugin", args: [plugin.name])
+	}
 
-    /// Disables a plugin.
-    ///
-    /// RPC Method: `core.disable_plugin`
-    ///
-    /// - Parameter plugin: The plugin to disable.
-    static func disablePlugin(_ plugin: Plugin) -> DelugeRequest<Bool> {
-        .init(method: "core.disable_plugin", args: [plugin.name])
-    }
+	/// Disables a plugin.
+	///
+	/// RPC Method: `core.disable_plugin`
+	///
+	/// - Parameter plugin: The plugin to disable.
+	static func disablePlugin(_ plugin: Plugin) -> DelugeRequest<Bool> {
+		.init(method: "core.disable_plugin", args: [plugin.name])
+	}
 }
