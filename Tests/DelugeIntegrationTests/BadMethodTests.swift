@@ -22,8 +22,7 @@ struct BadMethodTests {
 					}
 				} catch let error as Deluge.Error {
 					switch error {
-					case let .response(.message(error)):
-						#expect(error == "Unknown method")
+					case .response(.unknownMethod):
 						confirmation.confirm()
 					default:
 						Issue.record("Unexpected error: \(error)")
@@ -46,8 +45,8 @@ struct BadMethodTests {
 			Issue.record("Expected error")
 		} catch {
 			switch error {
-			case let .response(.message(error)):
-				#expect(error == "Unknown method")
+			case .response(.unknownMethod):
+				break
 			default:
 				Issue.record("Unexpected error: \(error)")
 			}
