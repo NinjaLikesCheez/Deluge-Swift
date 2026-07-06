@@ -27,7 +27,7 @@ struct WebRequestsTests {
                 #expect(torrent?.peers != nil)
                 #expect(torrent?.progress != nil)
                 #expect(torrent?.seeds != nil)
-        #expect(torrent?.seedingTime != nil)
+                #expect(torrent?.seedingTime != nil)
                 #expect(torrent?.seedingTime != nil)
                 #expect(torrent?.size != nil)
                 #expect(torrent?.state != nil)

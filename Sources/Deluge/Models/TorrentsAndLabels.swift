@@ -19,7 +19,7 @@ public struct TorrentsAndLabels: Decodable, Sendable {
         torrents = torrentsDictionary.map { .init(hash: $0.key, torrent: $0.value) }
         let tempLabels = torrentsDictionary
             .filter { !($0.value.label?.isEmpty ?? true) }
-            .compactMap { $0.value.label }
+            .compactMap(\.value.label)
             .reduce(into: [String: Int]()) { partialResult, label in
                 partialResult[label, default: 0] += 1
             }
