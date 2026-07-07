@@ -97,6 +97,34 @@ struct CoreRequestsTests {
 		}
 
 		@Test
+		func test_queueTop() async throws {
+			let url = urlForResource(named: TestConfig.torrent1)
+			try await ensureTorrentAdded(fileURL: url, to: client)
+			for try await _ in client.request(.queueTop(hashes: [TestConfig.torrent1Hash])).values {}
+		}
+
+		@Test
+		func test_queueUp() async throws {
+			let url = urlForResource(named: TestConfig.torrent1)
+			try await ensureTorrentAdded(fileURL: url, to: client)
+			for try await _ in client.request(.queueUp(hashes: [TestConfig.torrent1Hash])).values {}
+		}
+
+		@Test
+		func test_queueDown() async throws {
+			let url = urlForResource(named: TestConfig.torrent1)
+			try await ensureTorrentAdded(fileURL: url, to: client)
+			for try await _ in client.request(.queueDown(hashes: [TestConfig.torrent1Hash])).values {}
+		}
+
+		@Test
+		func test_queueBottom() async throws {
+			let url = urlForResource(named: TestConfig.torrent1)
+			try await ensureTorrentAdded(fileURL: url, to: client)
+			for try await _ in client.request(.queueBottom(hashes: [TestConfig.torrent1Hash])).values {}
+		}
+
+		@Test
 		func test_resume() async throws {
 			let url = urlForResource(named: TestConfig.torrent1)
 			try await ensureTorrentAdded(fileURL: url, to: client)
@@ -174,6 +202,34 @@ struct CoreRequestsTests {
 		let url = urlForResource(named: TestConfig.torrent1)
 		try await ensureTorrentAdded(fileURL: url, to: client)
 		try await client.request(.pause(hashes: [TestConfig.torrent1Hash]))
+	}
+
+	@Test
+	func test_queueTop_concurrency() async throws {
+		let url = urlForResource(named: TestConfig.torrent1)
+		try await ensureTorrentAdded(fileURL: url, to: client)
+		try await client.request(.queueTop(hashes: [TestConfig.torrent1Hash]))
+	}
+
+	@Test
+	func test_queueUp_concurrency() async throws {
+		let url = urlForResource(named: TestConfig.torrent1)
+		try await ensureTorrentAdded(fileURL: url, to: client)
+		try await client.request(.queueUp(hashes: [TestConfig.torrent1Hash]))
+	}
+
+	@Test
+	func test_queueDown_concurrency() async throws {
+		let url = urlForResource(named: TestConfig.torrent1)
+		try await ensureTorrentAdded(fileURL: url, to: client)
+		try await client.request(.queueDown(hashes: [TestConfig.torrent1Hash]))
+	}
+
+	@Test
+	func test_queueBottom_concurrency() async throws {
+		let url = urlForResource(named: TestConfig.torrent1)
+		try await ensureTorrentAdded(fileURL: url, to: client)
+		try await client.request(.queueBottom(hashes: [TestConfig.torrent1Hash]))
 	}
 
 	@Test
