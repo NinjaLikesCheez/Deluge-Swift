@@ -31,6 +31,10 @@ public enum DelugeResponseError: Error, Sendable {
 	case unauthenticated
 	/// The Deluge daemon is not connected.
 	case unconnected
+	/// The requested RPC method does not exist. Deluge reports this identically for a method that's genuinely
+	/// invalid and for one that's simply not recognized yet because the web client hasn't connected to a daemon
+	/// host - this case is only surfaced once reconnecting and retrying still hits the same error.
+	case unknownMethod
 	/// The added torrent is already in the session.
 	case torrentAlreadyInSession
 	/// Until everything uses typed throws... this has to be here
@@ -43,6 +47,10 @@ extension DelugeResponseError {
 		switch DelugeErrorCode(rawValue: error.code) {
 		case .unauthenticated:
 			return .unauthenticated
+		case .unknownRpcMethod:
+			// The web client hasn't connected to a daemon host yet, so it doesn't recognize any `core.*`/plugin
+			// methods. This is recoverable the same way as `.unconnected` from `web.update_ui`: reconnect and retry.
+			return .unconnected
 		case .rpcRequestErrorAsync:
 			// There is a bug in deluge that adding a torrent that exists will return a stacktrace of a python
 			// exception.
@@ -61,7 +69,7 @@ extension DelugeResponseError {
 /// Error codes returned by the Deluge JSON-RPC API.
 ///
 /// See [deluge/ui/web/json_api.py](https://github.com/deluge-torrent/deluge/blob/develop/deluge/ui/web/json_api.py)
-private enum DelugeErrorCode: Int {
+enum DelugeErrorCode: Int {
 	/// The provided authentication was not valid.
 	case unauthenticated = 1
 	/// The requested RPC method does not exist.

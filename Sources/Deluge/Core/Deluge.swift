@@ -67,8 +67,16 @@ public final class Deluge: Client, Sendable {
 
 		guard let error = response.error else { return }
 
-		if error.code == 1 {
+		switch DelugeErrorCode(rawValue: error.code) {
+		case .unauthenticated:
 			throw .response(.unauthenticated)
+		case .unknownRpcMethod:
+			// Deluge returns this same error both when the web client hasn't connected to a daemon host yet, and
+			// when the method genuinely doesn't exist. Treat it as `.unconnected` so callers reconnect and retry
+			// once; `request(_:)` falls back to `.unknownMethod` if a retried request hits this again.
+			throw .response(.unconnected)
+		case _:
+			break
 		}
 
 		let parts = [
@@ -109,6 +117,18 @@ public final class Deluge: Client, Sendable {
 						}
 						.flatMap { _ in
 							self.send(request: request)
+								.catch { retryError -> AnyPublisher<Value, Deluge.Error> in
+									guard case .response(.unconnected) = retryError else {
+										return Fail<Value, Deluge.Error>(error: retryError).eraseToAnyPublisher()
+									}
+
+									// Deluge reports an unrecognized RPC method the same way it reports "not
+									// connected yet". We've already connected and retried once, so a repeat of the
+									// same error means the method itself doesn't exist rather than a connectivity
+									// issue - surface that instead of retrying forever.
+									return Fail<Value, Deluge.Error>(error: .response(.unknownMethod))
+										.eraseToAnyPublisher()
+								}
 								.eraseToAnyPublisher()
 						}
 						.eraseToAnyPublisher()
@@ -156,7 +176,14 @@ public extension Deluge {
 
 				try await send(request: DelugeRequest<EmptyResponse>.connect(to: host.id))
 
-				return try await send(request: request)
+				do {
+					return try await send(request: request)
+				} catch .response(.unconnected) {
+					// Deluge reports an unrecognized RPC method the same way it reports "not connected yet". We've
+					// already connected and retried once, so a repeat of the same error means the method itself
+					// doesn't exist rather than a connectivity issue - surface that instead of retrying forever.
+					throw .response(.unknownMethod)
+				}
 			case .response(.unauthenticated):
 				try await send(request: DelugeRequest<Bool>.authenticate(password))
 				return try await send(request: request)
