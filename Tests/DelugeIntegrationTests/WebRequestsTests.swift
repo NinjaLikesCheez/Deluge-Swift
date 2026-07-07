@@ -6,7 +6,7 @@ import Testing
 	import Combine
 #endif
 
-@Suite("Web Requests")
+@Suite("Web Requests", .serialized)
 struct WebRequestsTests {
 	#if canImport(Combine)
 		@Test
