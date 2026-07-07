@@ -1,7 +1,7 @@
 /// Plugin-wide configuration for the Label plugin, as returned by `label.get_config`.
 public struct LabelConfig: Equatable, Decodable, Hashable, Sendable {
 	/// The tracker URLs used to automatically match and assign labels to new torrents.
-	public var autoAddTrackers: [String]
+	public let autoAddTrackers: [String]
 
 	enum CodingKeys: String, CodingKey {
 		case autoAddTrackers = "auto_add_trackers"
