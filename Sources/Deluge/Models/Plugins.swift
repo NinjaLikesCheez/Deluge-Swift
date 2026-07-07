@@ -48,6 +48,9 @@ public extension Plugin {
 		.init("Label")
 	}
 
+	/// Types related to the "Label" plugin.
+	enum Label {}
+
 	/// The "Notifications" plugin.
 	static var notifications: Plugin {
 		.init("Notifications")

@@ -45,7 +45,7 @@ public extension DelugeRequest {
 	/// RPC Method: `label.get_options`
 	///
 	/// - Parameter labelID: The ID of the label whose options should be requested.
-	static func labelOptions(_ labelID: String) -> DelugeRequest<LabelOptions> {
+	static func labelOptions(_ labelID: String) -> DelugeRequest<Plugin.Label.Options> {
 		.init(method: "label.get_options", args: [labelID])
 	}
 
@@ -56,14 +56,14 @@ public extension DelugeRequest {
 	/// - Parameters:
 	///   - labelID: The ID of the label whose options should be set.
 	///   - options: The new options for the label.
-	static func setLabelOptions(_ labelID: String, options: LabelOptions) -> DelugeRequest<EmptyResponse> {
+	static func setLabelOptions(_ labelID: String, options: Plugin.Label.Options) -> DelugeRequest<EmptyResponse> {
 		.init(method: "label.set_options", args: [labelID, options.rpcDictionary])
 	}
 
 	/// Requests the plugin-wide configuration for the Label plugin.
 	///
 	/// RPC Method: `label.get_config`
-	static var labelConfig: DelugeRequest<LabelConfig> {
+	static var labelConfig: DelugeRequest<Plugin.Label.Config> {
 		.init(method: "label.get_config", args: [])
 	}
 
@@ -72,7 +72,7 @@ public extension DelugeRequest {
 	/// RPC Method: `label.set_config`
 	///
 	/// - Parameter config: The new plugin-wide configuration.
-	static func setLabelConfig(_ config: LabelConfig) -> DelugeRequest<EmptyResponse> {
+	static func setLabelConfig(_ config: Plugin.Label.Config) -> DelugeRequest<EmptyResponse> {
 		.init(method: "label.set_config", args: [config.rpcDictionary])
 	}
 }

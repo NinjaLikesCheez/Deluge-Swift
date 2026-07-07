@@ -74,7 +74,7 @@ struct LabelRequestsTests {
 	func test_setLabelConfig_concurrency() async throws {
 		try #require(try await ensurePluginEnabled(.label, from: client), "Label plugin could not be enabled")
 		await #expect(throws: Deluge.Error.self) {
-			try await client.request(.setLabelConfig(LabelConfig(autoAddTrackers: [])))
+			try await client.request(.setLabelConfig(Plugin.Label.Config(autoAddTrackers: [])))
 		}
 	}
 }
