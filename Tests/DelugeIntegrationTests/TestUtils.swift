@@ -39,3 +39,9 @@ func ensureTorrentRemoved(hash: String, from client: Deluge) async throws {
 func ensurePluginEnabled(_ plugin: Plugin, from client: Deluge) async throws -> Bool {
 	try await client.request(.enablePlugin(plugin))
 }
+
+func ensureLabelRemoved(_ labelID: String, from client: Deluge) async throws {
+	let labels = try await client.request(.labels)
+	guard labels.contains(labelID) else { return }
+	try await client.request(.removeLabel(labelID))
+}
