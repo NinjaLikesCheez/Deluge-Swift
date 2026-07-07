@@ -69,7 +69,7 @@ public extension Plugin {
 	}
 
 	/// The "WebUi" plugin.
-	static var WebU: Plugin {
+	static var webUi: Plugin {
 		.init("WebUi")
 	}
 }
