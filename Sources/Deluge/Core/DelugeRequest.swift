@@ -1,6 +1,10 @@
 import APIClient
 import Foundation
 
+#if canImport(FoundationNetworking)
+	import FoundationNetworking
+#endif
+
 public struct DelugeRequest<DelugeResponse: Decodable>: Request {
 	public typealias Response = DelugeResponse
 	public var method: HTTPMethod
