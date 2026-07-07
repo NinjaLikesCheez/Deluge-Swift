@@ -104,8 +104,10 @@ public final class Deluge: Client, Sendable {
 			let retryIfNeeded = { (error: Deluge.Error) -> AnyPublisher<Value, Deluge.Error> in
 				switch error {
 				case .response(.unconnected):
-					// Attempt to connect to the host, if there is only one host
-					self.send(request: DelugeRequest<[Host]>.hosts)
+					// Attempt to connect to the host, if there is only one host. Uses `request(_:)` (not `send(_:)`)
+					// so that if the session was invalidated (e.g. after `auth.delete_session`), this lookup
+					// re-authenticates instead of surfacing a raw `.unauthenticated` error.
+					self.request(DelugeRequest<[Host]>.hosts)
 						.flatMap { hosts in
 							guard hosts.count == 1, let host = hosts.first else {
 								return Fail<EmptyResponse, Deluge.Error>(error: .response(.unconnected))
