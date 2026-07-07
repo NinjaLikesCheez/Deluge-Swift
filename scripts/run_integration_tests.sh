@@ -31,7 +31,7 @@ mkdir -p "${DOCKER_VOLUME_ROOT}"/{config,downloads}
 
 sleep 5
 
-swift test --filter DelugeIntegrationTests && RC=$? || RC=$?
+swift test --no-parallel --filter DelugeIntegrationTests && RC=$? || RC=$?
 
 "${DOCKER}" container stop DelugeIntegrationTests
 "${DOCKER}" container rm DelugeIntegrationTests

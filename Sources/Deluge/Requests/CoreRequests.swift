@@ -93,6 +93,42 @@ public extension DelugeRequest {
 		.init(method: "core.pause_torrents", args: [hashes])
 	}
 
+	/// Moves torrents with the given hashes to the top of the queue.
+	///
+	/// RPC Method: `core.queue_top`
+	///
+	/// - Parameter hashes: The torrent hashes to move to the top of the queue.
+	static func queueTop(hashes: [String]) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.queue_top", args: [hashes])
+	}
+
+	/// Moves torrents with the given hashes up one position in the queue.
+	///
+	/// RPC Method: `core.queue_up`
+	///
+	/// - Parameter hashes: The torrent hashes to move up in the queue.
+	static func queueUp(hashes: [String]) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.queue_up", args: [hashes])
+	}
+
+	/// Moves torrents with the given hashes down one position in the queue.
+	///
+	/// RPC Method: `core.queue_down`
+	///
+	/// - Parameter hashes: The torrent hashes to move down in the queue.
+	static func queueDown(hashes: [String]) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.queue_down", args: [hashes])
+	}
+
+	/// Moves torrents with the given hashes to the bottom of the queue.
+	///
+	/// RPC Method: `core.queue_bottom`
+	///
+	/// - Parameter hashes: The torrent hashes to move to the bottom of the queue.
+	static func queueBottom(hashes: [String]) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.queue_bottom", args: [hashes])
+	}
+
 	/// Removes torrents with the given hashes.
 	///
 	/// RPC Method: `core.remove_torrents`

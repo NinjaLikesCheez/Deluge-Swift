@@ -1,0 +1,25 @@
+{
+  "configurations" : [
+    {
+      "id" : "02DC8922-C1E2-4D77-913C-750CBB523128",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "DelugeIntegrationTests",
+        "name" : "DelugeIntegrationTests"
+      }
+    }
+  ],
+  "version" : 1
+}
