@@ -5,3 +5,4 @@ xcuserdata/
 scripts/.integration-test/
 tools/.bin/
 tools/.checkout/
+.vscode/
