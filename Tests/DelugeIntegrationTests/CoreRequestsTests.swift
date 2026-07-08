@@ -228,6 +228,89 @@ struct CoreRequestsTests {
 				#expect(status["dht_nodes"] != nil)
 			}
 		}
+
+		@Test
+		func test_config() async throws {
+			for try await config in client.request(.config).values {
+				#expect(config["download_location"] != nil)
+			}
+		}
+
+		@Test
+		func test_configValue_configValues_setConfig() async throws {
+			for try await value in client.request(.configValue("max_active_seeding")).values {
+				#expect(value != .null)
+			}
+
+			for try await values in client.request(.configValues(["max_active_seeding", "max_active_downloading"])).values {
+				#expect(values["max_active_seeding"] != nil)
+				#expect(values["max_active_downloading"] != nil)
+			}
+
+			for try await _ in client.request(.setConfig(["max_active_seeding": .int(42)])).values {}
+
+			for try await value in client.request(.configValue("max_active_seeding")).values {
+				#expect(value == .int(42))
+			}
+		}
+
+		@Test
+		func test_listenPort() async throws {
+			for try await port in client.request(.listenPort).values {
+				#expect(port > 0)
+			}
+		}
+
+		@Test
+		func test_proxy() async throws {
+			for try await proxy in client.request(.proxy).values {
+				#expect(proxy["type"] != nil)
+			}
+		}
+
+		@Test
+		func test_freeSpace() async throws {
+			for try await freeSpace in client.request(.freeSpace()).values {
+				#expect(freeSpace > 0)
+			}
+		}
+
+		@Test
+		func test_libtorrentVersion() async throws {
+			for try await version in client.request(.libtorrentVersion).values {
+				#expect(!version.isEmpty)
+			}
+		}
+
+		@Test
+		func test_testListenPort() async throws {
+			for try await _ in client.request(.testListenPort).values {}
+		}
+
+		@Test
+		func test_pathSize() async throws {
+			for try await size in client.request(.pathSize("/nonexistent-path")).values {
+				#expect(size == -1)
+			}
+		}
+
+		@Test
+		func test_completionPaths() async throws {
+			for try await completion in client.request(.completionPaths("/")).values {
+				guard case let .array(paths)? = completion["paths"] else {
+					Issue.record("Expected \"paths\" to be an array")
+					return
+				}
+				#expect(!paths.isEmpty)
+			}
+		}
+
+		@Test
+		func test_glob() async throws {
+			for try await paths in client.request(.glob("/nonexistent-path/*")).values {
+				#expect(paths.isEmpty)
+			}
+		}
 	#endif
 
 	@Test
@@ -454,5 +537,77 @@ struct CoreRequestsTests {
 		let status = try await client.request(.sessionStatus(keys: ["num_peers", "dht_nodes"]))
 		#expect(status["num_peers"] != nil)
 		#expect(status["dht_nodes"] != nil)
+	}
+
+	@Test
+	func test_config_concurrency() async throws {
+		let config = try await client.request(.config)
+		#expect(config["download_location"] != nil)
+	}
+
+	@Test
+	func test_configValue_configValues_setConfig_concurrency() async throws {
+		let value = try await client.request(.configValue("max_active_seeding"))
+		#expect(value != .null)
+
+		let values = try await client.request(.configValues(["max_active_seeding", "max_active_downloading"]))
+		#expect(values["max_active_seeding"] != nil)
+		#expect(values["max_active_downloading"] != nil)
+
+		try await client.request(.setConfig(["max_active_seeding": .int(42)]))
+
+		let updatedValue = try await client.request(.configValue("max_active_seeding"))
+		#expect(updatedValue == .int(42))
+	}
+
+	@Test
+	func test_listenPort_concurrency() async throws {
+		let port = try await client.request(.listenPort)
+		#expect(port > 0)
+	}
+
+	@Test
+	func test_proxy_concurrency() async throws {
+		let proxy = try await client.request(.proxy)
+		#expect(proxy["type"] != nil)
+	}
+
+	@Test
+	func test_freeSpace_concurrency() async throws {
+		let freeSpace = try await client.request(.freeSpace())
+		#expect(freeSpace > 0)
+	}
+
+	@Test
+	func test_libtorrentVersion_concurrency() async throws {
+		let version = try await client.request(.libtorrentVersion)
+		#expect(!version.isEmpty)
+	}
+
+	@Test
+	func test_testListenPort_concurrency() async throws {
+		_ = try await client.request(.testListenPort)
+	}
+
+	@Test
+	func test_pathSize_concurrency() async throws {
+		let size = try await client.request(.pathSize("/nonexistent-path"))
+		#expect(size == -1)
+	}
+
+	@Test
+	func test_completionPaths_concurrency() async throws {
+		let completion = try await client.request(.completionPaths("/"))
+		guard case let .array(paths)? = completion["paths"] else {
+			Issue.record("Expected \"paths\" to be an array")
+			return
+		}
+		#expect(!paths.isEmpty)
+	}
+
+	@Test
+	func test_glob_concurrency() async throws {
+		let paths = try await client.request(.glob("/nonexistent-path/*"))
+		#expect(paths.isEmpty)
 	}
 }
