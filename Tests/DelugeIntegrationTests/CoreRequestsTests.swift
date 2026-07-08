@@ -207,6 +207,27 @@ struct CoreRequestsTests {
 			try await ensureTorrentAdded(fileURL: url, to: client)
 			for try await _ in client.request(.resume(hashes: [TestConfig.torrent1Hash])).values {}
 		}
+
+		@Test
+		func test_pauseSession_resumeSession_isSessionPaused() async throws {
+			for try await _ in client.request(.pauseSession).values {}
+			for try await isPaused in client.request(.isSessionPaused).values {
+				#expect(isPaused == true)
+			}
+
+			for try await _ in client.request(.resumeSession).values {}
+			for try await isPaused in client.request(.isSessionPaused).values {
+				#expect(isPaused == false)
+			}
+		}
+
+		@Test
+		func test_sessionStatus() async throws {
+			for try await status in client.request(.sessionStatus(keys: ["num_peers", "dht_nodes"])).values {
+				#expect(status["num_peers"] != nil)
+				#expect(status["dht_nodes"] != nil)
+			}
+		}
 	#endif
 
 	@Test
@@ -415,5 +436,23 @@ struct CoreRequestsTests {
 
 		let sessionState = try await client.request(.sessionState)
 		#expect(sessionState.contains(TestConfig.torrent1Hash))
+	}
+
+	@Test
+	func test_pauseSession_resumeSession_isSessionPaused_concurrency() async throws {
+		try await client.request(.pauseSession)
+		let isPaused = try await client.request(.isSessionPaused)
+		#expect(isPaused == true)
+
+		try await client.request(.resumeSession)
+		let isResumed = try await client.request(.isSessionPaused)
+		#expect(isResumed == false)
+	}
+
+	@Test
+	func test_sessionStatus_concurrency() async throws {
+		let status = try await client.request(.sessionStatus(keys: ["num_peers", "dht_nodes"]))
+		#expect(status["num_peers"] != nil)
+		#expect(status["dht_nodes"] != nil)
 	}
 }

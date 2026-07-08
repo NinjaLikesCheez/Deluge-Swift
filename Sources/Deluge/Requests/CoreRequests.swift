@@ -451,4 +451,38 @@ public extension DelugeRequest {
 	static var sessionState: DelugeRequest<[String]> {
 		.init(method: "core.get_session_state", args: [])
 	}
+
+	/// Pauses the libtorrent session, pausing all torrents.
+	///
+	/// RPC Method: `core.pause_session`
+	static var pauseSession: DelugeRequest<EmptyResponse> {
+		.init(method: "core.pause_session", args: [])
+	}
+
+	/// Resumes the libtorrent session, resuming all torrents that aren't individually paused.
+	///
+	/// RPC Method: `core.resume_session`
+	static var resumeSession: DelugeRequest<EmptyResponse> {
+		.init(method: "core.resume_session", args: [])
+	}
+
+	/// Requests whether the libtorrent session is paused.
+	///
+	/// RPC Method: `core.is_session_paused`
+	static var isSessionPaused: DelugeRequest<Bool> {
+		.init(method: "core.is_session_paused", args: [])
+	}
+
+	/// Requests values from the libtorrent session status.
+	///
+	/// RPC Method: `core.get_session_status`
+	///
+	/// Result: A dictionary mapping each requested key to its value.
+	///
+	/// - Parameter keys: The libtorrent session status keys to request. Refer to
+	///   [session_status](https://www.libtorrent.org/reference-Session_Status.html) in the libtorrent documentation
+	///   for valid keys.
+	static func sessionStatus(keys: [String]) -> DelugeRequest<[String: Double]> {
+		.init(method: "core.get_session_status", args: [keys])
+	}
 }
