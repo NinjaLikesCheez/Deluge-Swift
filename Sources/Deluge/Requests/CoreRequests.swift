@@ -485,4 +485,40 @@ public extension DelugeRequest {
 	static func sessionStatus(keys: [String]) -> DelugeRequest<[String: Double]> {
 		.init(method: "core.get_session_status", args: [keys])
 	}
+
+	/// Requests the list of plugins available to the daemon.
+	///
+	/// RPC Method: `core.get_available_plugins`
+	///
+	/// Result: The names of the available plugins.
+	static var availablePlugins: DelugeRequest<[String]> {
+		.init(method: "core.get_available_plugins", args: [])
+	}
+
+	/// Requests the list of plugins currently enabled on the daemon.
+	///
+	/// RPC Method: `core.get_enabled_plugins`
+	///
+	/// Result: The names of the enabled plugins.
+	static var enabledPlugins: DelugeRequest<[String]> {
+		.init(method: "core.get_enabled_plugins", args: [])
+	}
+
+	/// Uploads a new plugin egg to the daemon.
+	///
+	/// RPC Method: `core.upload_plugin`
+	///
+	/// - Parameter fileURL: The URL of the local plugin egg file to upload.
+	static func uploadPlugin(fileURL: URL) -> DelugeRequest<EmptyResponse> {
+		let fileName = fileURL.lastPathComponent
+		let data = FileManager.default.contents(atPath: fileURL.path)?.base64EncodedString() ?? ""
+		return .init(method: "core.upload_plugin", args: [fileName, data])
+	}
+
+	/// Scans the plugin folders for new plugins.
+	///
+	/// RPC Method: `core.rescan_plugins`
+	static var rescanPlugins: DelugeRequest<EmptyResponse> {
+		.init(method: "core.rescan_plugins", args: [])
+	}
 }
