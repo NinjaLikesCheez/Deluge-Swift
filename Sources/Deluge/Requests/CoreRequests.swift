@@ -55,6 +55,45 @@ public extension DelugeRequest {
 		.init(method: "core.add_torrent_url", args: [url.absoluteString, [String: Any]()])
 	}
 
+	/// Adds a torrent using a URL to a local torrent file, asynchronously.
+	///
+	/// RPC Method: `core.add_torrent_file_async`
+	///
+	/// Result: The added torrent's hash, or `nil` if the torrent was not added.
+	///
+	/// - Parameters:
+	///   - fileURL: The URL of the local torrent file to add.
+	///   - saveState: Whether the session state should be saved after adding the torrent.
+	static func addAsync(fileURL: URL, saveState: Bool = true) -> DelugeRequest<String?> {
+		let fileName = fileURL.lastPathComponent
+		let data = FileManager.default.contents(atPath: fileURL.path)?.base64EncodedString() ?? ""
+		return .init(
+			method: "core.add_torrent_file_async",
+			args: [fileName, data, [String: Any](), saveState]
+		)
+	}
+
+	/// Downloads a magnet URL's metadata without adding it to the session.
+	///
+	/// Useful for presenting a file-selection UI before adding a torrent to the session.
+	///
+	/// RPC Method: `core.prefetch_magnet_metadata`
+	///
+	/// - Parameters:
+	///   - magnetURL: The magnet URL to prefetch metadata for.
+	///   - timeout: The number of seconds to wait before canceling the request.
+	static func prefetchMetadata(magnetURL: URL, timeout: Int = 30) -> DelugeRequest<MagnetMetadata> {
+		.init(
+			method: "core.prefetch_magnet_metadata",
+			args: [magnetURL.absoluteString, timeout],
+			transform: { data in
+				let response = try JSONDecoder().decode(Deluge.Response<[String]>.self, from: data)
+				assert(response.result.count == 2)
+				return MagnetMetadata(torrentID: response.result[0], metadata: response.result[1])
+			}
+		)
+	}
+
 	/// Forces a reannounce for torrents with the given hashes.
 	///
 	/// RPC Method: `core.force_reannounce`
@@ -161,6 +200,19 @@ public extension DelugeRequest {
 		)
 	}
 
+	/// Removes a single torrent.
+	///
+	/// RPC Method: `core.remove_torrent`
+	///
+	/// Result: Whether the torrent was removed successfully.
+	///
+	/// - Parameters:
+	///   - hash: The torrent hash to remove.
+	///   - removeData: Whether the torrent's data should be removed.
+	static func remove(hash: String, removeData: Bool) -> DelugeRequest<Bool> {
+		.init(method: "core.remove_torrent", args: [hash, removeData])
+	}
+
 	/// Resumes torrents with the given hashes.
 	///
 	/// RPC Method: `core.resume_torrents`
@@ -184,6 +236,133 @@ public extension DelugeRequest {
 				hashes,
 				options.reduce(into: [String: Any]()) { $0[$1.key] = $1.value },
 			])
+	}
+
+	/// Manually adds a peer to a torrent.
+	///
+	/// RPC Method: `core.connect_peer`
+	///
+	/// - Parameters:
+	///   - hash: The torrent hash to add the peer to.
+	///   - ip: The peer's IP address.
+	///   - port: The peer's port.
+	static func connectPeer(hash: String, ip: String, port: Int) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.connect_peer", args: [hash, ip, port])
+	}
+
+	/// Sets the SSL certificate used to connect to SSL peers of a torrent.
+	///
+	/// RPC Method: `core.set_ssl_torrent_cert`
+	///
+	/// - Parameters:
+	///   - hash: The torrent hash to set the certificate for.
+	///   - certificate: The SSL certificate.
+	///   - privateKey: The private key for the certificate.
+	///   - dhParams: The Diffie-Hellman parameters.
+	///   - saveToDisk: Whether the certificate files should be saved to disk.
+	static func setSSLCert(
+		hash: String,
+		certificate: String,
+		privateKey: String,
+		dhParams: String,
+		saveToDisk: Bool = true
+	) -> DelugeRequest<EmptyResponse> {
+		.init(
+			method: "core.set_ssl_torrent_cert",
+			args: [hash, certificate, privateKey, dhParams, saveToDisk]
+		)
+	}
+
+	/// Replaces a torrent's tracker list.
+	///
+	/// RPC Method: `core.set_torrent_trackers`
+	///
+	/// - Parameters:
+	///   - hash: The torrent hash to update.
+	///   - trackers: The new list of trackers for the torrent.
+	static func setTrackers(hash: String, trackers: [Tracker]) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.set_torrent_trackers", args: [hash, trackers.map(\.rpcDictionary)])
+	}
+
+	/// Requests the magnet URI for a torrent.
+	///
+	/// RPC Method: `core.get_magnet_uri`
+	///
+	/// - Parameter hash: The torrent hash to get the magnet URI for.
+	static func magnetURI(hash: String) -> DelugeRequest<String> {
+		.init(method: "core.get_magnet_uri", args: [hash])
+	}
+
+	/// Renames files in a torrent.
+	///
+	/// RPC Method: `core.rename_files`
+	///
+	/// - Parameters:
+	///   - hash: The torrent hash whose files should be renamed.
+	///   - filenames: The list of `(index, filename)` pairs describing the renames to perform.
+	static func renameFiles(hash: String, filenames: [(index: Int, filename: String)]) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.rename_files", args: [hash, filenames.map { [$0.index, $0.filename] }])
+	}
+
+	/// Renames a folder within a torrent.
+	///
+	/// RPC Method: `core.rename_folder`
+	///
+	/// - Parameters:
+	///   - hash: The torrent hash containing the folder.
+	///   - folder: The folder to rename.
+	///   - newFolder: The new folder name.
+	static func renameFolder(hash: String, folder: String, newFolder: String) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.rename_folder", args: [hash, folder, newFolder])
+	}
+
+	/// Creates a new `.torrent` file server-side.
+	///
+	/// RPC Method: `core.create_torrent`
+	///
+	/// Result: The created torrent's filename and base64 encoded, bencoded contents.
+	///
+	/// - Parameters:
+	///   - path: The path, on the server, of the file or directory to create a torrent from.
+	///   - tracker: The primary tracker URL.
+	///   - pieceLength: The size of each piece in the torrent, in bytes.
+	///   - comment: An optional comment to include in the torrent.
+	///   - target: An optional path, on the server, to save the created torrent file to.
+	///   - webSeeds: An optional list of webseed URLs.
+	///   - isPrivate: Whether the torrent should be marked private.
+	///   - createdBy: An optional string identifying the torrent's creator.
+	///   - trackers: An optional list of additional tracker URLs.
+	///   - addToSession: Whether the created torrent should be added to the session.
+	///   - format: The torrent format to create.
+	static func createTorrent(
+		path: String,
+		tracker: String,
+		pieceLength: Int,
+		comment: String? = nil,
+		target: String? = nil,
+		webSeeds: [String]? = nil,
+		isPrivate: Bool = false,
+		createdBy: String? = nil,
+		trackers: [String]? = nil,
+		addToSession: Bool = false,
+		format: TorrentFormat = .v1
+	) -> DelugeRequest<CreateTorrentResult> {
+		.init(
+			method: "core.create_torrent",
+			args: [
+				path,
+				tracker,
+				pieceLength,
+				comment as Any,
+				target as Any,
+				webSeeds as Any,
+				isPrivate,
+				createdBy as Any,
+				trackers as Any,
+				addToSession,
+				format.rawValue,
+			]
+		)
 	}
 
 	/// Enables a plugin.
