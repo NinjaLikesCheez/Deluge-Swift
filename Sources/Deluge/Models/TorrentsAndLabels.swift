@@ -29,7 +29,11 @@ public struct TorrentsAndLabels: Decodable, Sendable {
 	}
 }
 
-private struct UnhashedTorrent: Decodable, Sendable {
+/// The status fields for a torrent, keyed the same way regardless of which RPC method produced them.
+///
+/// Shared by `web.update_ui` (via `TorrentsAndLabels`) and `core.get_torrent_status`/`core.get_torrents_status`,
+/// all of which return the same field names but never include the torrent's hash in the payload itself.
+struct UnhashedTorrent: Decodable, Sendable {
 	let dateAdded: Date?
 	let downloaded: Int64?
 	let downloadPath: String?
@@ -104,7 +108,7 @@ private struct UnhashedTorrent: Decodable, Sendable {
 	}
 }
 
-private extension Torrent {
+extension Torrent {
 	init(hash: String, torrent: UnhashedTorrent) {
 		self = .init(
 			dateAdded: torrent.dateAdded,
