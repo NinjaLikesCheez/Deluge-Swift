@@ -51,3 +51,9 @@ func ensureAccountRemoved(_ username: String, from client: Deluge) async throws 
 	guard accounts.contains(where: { $0.username == username }) else { return }
 	try await client.request(.removeAccount(username: username))
 }
+
+func ensureHostRemoved(hostID: String, from client: Deluge) async throws {
+	let hosts = try await client.request(.hosts)
+	guard hosts.contains(where: { $0.id == hostID }) else { return }
+	try await client.request(.removeHost(hostID: hostID))
+}
