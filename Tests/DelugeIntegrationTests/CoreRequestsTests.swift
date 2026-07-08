@@ -228,6 +228,26 @@ struct CoreRequestsTests {
 				#expect(status["dht_nodes"] != nil)
 			}
 		}
+
+		@Test
+		func test_availablePlugins() async throws {
+			for try await plugins in client.request(.availablePlugins).values {
+				#expect(plugins.contains("Label"))
+			}
+		}
+
+		@Test
+		func test_enabledPlugins() async throws {
+			try #require(try await ensurePluginEnabled(.label, from: client), "Label plugin could not be enabled")
+			for try await plugins in client.request(.enabledPlugins).values {
+				#expect(plugins.contains("Label"))
+			}
+		}
+
+		@Test
+		func test_rescanPlugins() async throws {
+			for try await _ in client.request(.rescanPlugins).values {}
+		}
 	#endif
 
 	@Test
@@ -454,5 +474,23 @@ struct CoreRequestsTests {
 		let status = try await client.request(.sessionStatus(keys: ["num_peers", "dht_nodes"]))
 		#expect(status["num_peers"] != nil)
 		#expect(status["dht_nodes"] != nil)
+	}
+
+	@Test
+	func test_availablePlugins_concurrency() async throws {
+		let plugins = try await client.request(.availablePlugins)
+		#expect(plugins.contains("Label"))
+	}
+
+	@Test
+	func test_enabledPlugins_concurrency() async throws {
+		try #require(try await ensurePluginEnabled(.label, from: client), "Label plugin could not be enabled")
+		let plugins = try await client.request(.enabledPlugins)
+		#expect(plugins.contains("Label"))
+	}
+
+	@Test
+	func test_rescanPlugins_concurrency() async throws {
+		try await client.request(.rescanPlugins)
 	}
 }
