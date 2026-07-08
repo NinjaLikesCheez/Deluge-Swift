@@ -403,8 +403,27 @@ struct CoreRequestsTests {
 		)
 
 		#expect(torrent.hash == TestConfig.torrent1Hash)
+		#expect(torrent.activeTime != nil)
+		#expect(torrent.autoManaged != nil)
+		#expect(torrent.completedTime != nil)
+		#expect(torrent.comment != nil)
+		#expect(torrent.creator != nil)
+		#expect(torrent.distributedCopies != nil)
+		#expect(torrent.filePriorities != nil)
+		#expect(torrent.finishedTime != nil)
+		#expect(torrent.isFinished == false)
+		#expect(torrent.isPrivate != nil)
+		#expect(torrent.maxDownloadSpeed != nil)
+		#expect(torrent.maxUploadSpeed != nil)
+		#expect(torrent.moveCompletedPath != nil)
 		#expect(torrent.name != nil)
+		#expect(torrent.numFiles != nil)
+		#expect(torrent.queue != nil)
+		#expect(torrent.ratio != nil)
 		#expect(torrent.state != nil)
+		#expect(torrent.tracker != nil)
+		#expect(torrent.trackerHost != nil)
+		#expect(torrent.trackerStatus != nil)
 		#expect(torrent.trackers == TestConfig.torrent1Trackers)
 	}
 
@@ -418,6 +437,9 @@ struct CoreRequestsTests {
 		let torrent = torrents.first(where: { $0.hash == TestConfig.torrent1Hash })
 		#expect(torrent?.name != nil)
 		#expect(torrent?.state != nil)
+		#expect(torrent?.ratio != nil)
+		#expect(torrent?.isFinished == false)
+		#expect(torrent?.queue != nil)
 	}
 
 	@Test
