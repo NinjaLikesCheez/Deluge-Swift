@@ -485,4 +485,126 @@ public extension DelugeRequest {
 	static func sessionStatus(keys: [String]) -> DelugeRequest<[String: Double]> {
 		.init(method: "core.get_session_status", args: [keys])
 	}
+
+	/// Requests the full daemon configuration.
+	///
+	/// RPC Method: `core.get_config`
+	static var config: DelugeRequest<[String: Deluge.Value]> {
+		.init(method: "core.get_config", args: [])
+	}
+
+	/// Requests a single value from the daemon configuration.
+	///
+	/// RPC Method: `core.get_config_value`
+	///
+	/// - Parameter key: The configuration key to request.
+	static func configValue(_ key: String) -> DelugeRequest<Deluge.Value> {
+		.init(method: "core.get_config_value", args: [key])
+	}
+
+	/// Requests multiple values from the daemon configuration.
+	///
+	/// RPC Method: `core.get_config_values`
+	///
+	/// - Parameter keys: The configuration keys to request.
+	static func configValues(_ keys: [String]) -> DelugeRequest<[String: Deluge.Value]> {
+		.init(method: "core.get_config_values", args: [keys])
+	}
+
+	/// Sets values in the daemon configuration.
+	///
+	/// RPC Method: `core.set_config`
+	///
+	/// - Parameter config: The configuration keys and values to set.
+	static func setConfig(_ config: [String: Deluge.Value]) -> DelugeRequest<EmptyResponse> {
+		.init(method: "core.set_config", args: [config.mapValues(\.rpcValue)])
+	}
+
+	/// Requests the port the daemon listens on for incoming connections.
+	///
+	/// RPC Method: `core.get_listen_port`
+	static var listenPort: DelugeRequest<Int> {
+		.init(method: "core.get_listen_port", args: [])
+	}
+
+	/// Requests the port the daemon listens on for incoming SSL connections.
+	///
+	/// RPC Method: `core.get_ssl_listen_port`
+	///
+	/// - Note: Not all daemon versions expose this method; it may fail with an "Unknown method" error on daemons
+	///   built without libtorrent SSL support.
+	static var sslListenPort: DelugeRequest<Int> {
+		.init(method: "core.get_ssl_listen_port", args: [])
+	}
+
+	/// Requests the current proxy settings.
+	///
+	/// RPC Method: `core.get_proxy`
+	static var proxy: DelugeRequest<[String: Deluge.Value]> {
+		.init(method: "core.get_proxy", args: [])
+	}
+
+	/// Requests the amount of free space, in bytes, at the given path.
+	///
+	/// RPC Method: `core.get_free_space`
+	///
+	/// - Parameter path: The path to check for free space. If `nil`, the default download location is used.
+	static func freeSpace(path: String? = nil) -> DelugeRequest<Int> {
+		.init(method: "core.get_free_space", args: [path as Any])
+	}
+
+	/// Requests the external IP address seen by the libtorrent session.
+	///
+	/// RPC Method: `core.get_external_ip`
+	static var externalIP: DelugeRequest<String> {
+		.init(method: "core.get_external_ip", args: [])
+	}
+
+	/// Requests the version of libtorrent in use by the daemon.
+	///
+	/// RPC Method: `core.get_libtorrent_version`
+	static var libtorrentVersion: DelugeRequest<String> {
+		.init(method: "core.get_libtorrent_version", args: [])
+	}
+
+	/// Tests whether the configured listen port is accessible from outside the local network.
+	///
+	/// RPC Method: `core.test_listen_port`
+	static var testListenPort: DelugeRequest<Bool> {
+		.init(method: "core.test_listen_port", args: [])
+	}
+
+	/// Requests the size, in bytes, of the file or directory at the given path.
+	///
+	/// RPC Method: `core.get_path_size`
+	///
+	/// Result: The size in bytes, or `-1` if the path doesn't exist.
+	///
+	/// - Parameter path: The path to check.
+	static func pathSize(_ path: String) -> DelugeRequest<Int> {
+		.init(method: "core.get_path_size", args: [path])
+	}
+
+	/// Requests paths that complete the given partial path, for use in path auto-completion.
+	///
+	/// RPC Method: `core.get_completion_paths`
+	///
+	/// - Parameters:
+	///   - text: The partial path to complete.
+	///   - showHiddenFiles: Whether hidden files and directories should be included in the results.
+	static func completionPaths(_ text: String, showHiddenFiles: Bool = false) -> DelugeRequest<[String: Deluge.Value]> {
+		.init(
+			method: "core.get_completion_paths",
+			args: [["completion_text": text, "show_hidden_files": showHiddenFiles]]
+		)
+	}
+
+	/// Requests paths on the daemon's filesystem matching the given glob pattern.
+	///
+	/// RPC Method: `core.glob`
+	///
+	/// - Parameter pattern: The glob pattern to match paths against.
+	static func glob(_ pattern: String) -> DelugeRequest<[String]> {
+		.init(method: "core.glob", args: [pattern])
+	}
 }
