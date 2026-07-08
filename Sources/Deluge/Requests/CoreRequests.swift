@@ -203,4 +203,73 @@ public extension DelugeRequest {
 	static func disablePlugin(_ plugin: Plugin) -> DelugeRequest<Bool> {
 		.init(method: "core.disable_plugin", args: [plugin.name])
 	}
+
+	/// Requests the status for a single torrent.
+	///
+	/// RPC Method: `core.get_torrent_status`
+	///
+	/// Result: The torrent's status for the requested keys.
+	///
+	/// - Parameters:
+	///   - hash: The hash of the torrent whose status should be requested.
+	///   - keys: The status keys to request. An empty array requests all keys.
+	static func torrentStatus(hash: String, keys: [Torrent.PropertyKeys]) -> DelugeRequest<Torrent> {
+		.init(
+			method: "core.get_torrent_status",
+			args: [hash, keys.map(\.rawValue)],
+			transform: { data in
+				let response = try JSONDecoder().decode(Deluge.Response<UnhashedTorrent>.self, from: data)
+				return Torrent(hash: hash, torrent: response.result)
+			}
+		)
+	}
+
+	/// Requests the status for torrents matching the given filter.
+	///
+	/// RPC Method: `core.get_torrents_status`
+	///
+	/// Result: The matching torrents' statuses for the requested keys.
+	///
+	/// - Parameters:
+	///   - filter: The filter used to select torrents, e.g. `["state": "Seeding"]`. An empty dictionary matches
+	///     all torrents.
+	///   - keys: The status keys to request. An empty array requests all keys.
+	static func torrentsStatus(
+		filter: [String: Any] = [:],
+		keys: [Torrent.PropertyKeys]
+	) -> DelugeRequest<[Torrent]> {
+		.init(
+			method: "core.get_torrents_status",
+			args: [filter, keys.map(\.rawValue)],
+			transform: { data in
+				let response = try JSONDecoder().decode(Deluge.Response<[String: UnhashedTorrent]>.self, from: data)
+				return response.result.map { Torrent(hash: $0.key, torrent: $0.value) }
+			}
+		)
+	}
+
+	/// Requests the filter tree used to build sidebar filters (by state, tracker, label, owner, etc).
+	///
+	/// RPC Method: `core.get_filter_tree`
+	///
+	/// Result: A dictionary of filterable fields to the values and torrent counts for each.
+	///
+	/// - Parameters:
+	///   - showZeroHits: Whether values with zero matching torrents should be included.
+	///   - hideCategories: The filter fields that should be excluded from the result.
+	static func filterTree(
+		showZeroHits: Bool = true,
+		hideCategories: [String] = []
+	) -> DelugeRequest<[String: [FilterTreeEntry]]> {
+		.init(method: "core.get_filter_tree", args: [showZeroHits, hideCategories])
+	}
+
+	/// Requests the hashes of the torrents currently in the session.
+	///
+	/// RPC Method: `core.get_session_state`
+	///
+	/// Result: The list of torrent hashes in the session.
+	static var sessionState: DelugeRequest<[String]> {
+		.init(method: "core.get_session_state", args: [])
+	}
 }

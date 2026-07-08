@@ -238,4 +238,49 @@ struct CoreRequestsTests {
 		try await ensureTorrentAdded(fileURL: url, to: client)
 		try await client.request(.resume(hashes: [TestConfig.torrent1Hash]))
 	}
+
+	@Test
+	func test_torrentStatus_concurrency() async throws {
+		let url = urlForResource(named: TestConfig.torrent1)
+		try await ensureTorrentAdded(fileURL: url, to: client)
+
+		let torrent = try await client.request(
+			.torrentStatus(hash: TestConfig.torrent1Hash, keys: Torrent.PropertyKeys.allCases)
+		)
+
+		#expect(torrent.hash == TestConfig.torrent1Hash)
+		#expect(torrent.name != nil)
+		#expect(torrent.state != nil)
+		#expect(torrent.trackers == TestConfig.torrent1Trackers)
+	}
+
+	@Test
+	func test_torrentsStatus_concurrency() async throws {
+		let url = urlForResource(named: TestConfig.torrent1)
+		try await ensureTorrentAdded(fileURL: url, to: client)
+
+		let torrents = try await client.request(.torrentsStatus(keys: Torrent.PropertyKeys.allCases))
+
+		let torrent = torrents.first(where: { $0.hash == TestConfig.torrent1Hash })
+		#expect(torrent?.name != nil)
+		#expect(torrent?.state != nil)
+	}
+
+	@Test
+	func test_filterTree_concurrency() async throws {
+		let url = urlForResource(named: TestConfig.torrent1)
+		try await ensureTorrentAdded(fileURL: url, to: client)
+
+		let filterTree = try await client.request(.filterTree())
+		#expect(filterTree["state"] != nil)
+	}
+
+	@Test
+	func test_sessionState_concurrency() async throws {
+		let url = urlForResource(named: TestConfig.torrent1)
+		try await ensureTorrentAdded(fileURL: url, to: client)
+
+		let sessionState = try await client.request(.sessionState)
+		#expect(sessionState.contains(TestConfig.torrent1Hash))
+	}
 }
