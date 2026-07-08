@@ -45,3 +45,9 @@ func ensureLabelRemoved(_ labelID: String, from client: Deluge) async throws {
 	guard labels.contains(labelID) else { return }
 	try await client.request(.removeLabel(labelID))
 }
+
+func ensureAccountRemoved(_ username: String, from client: Deluge) async throws {
+	let accounts = try await client.request(.knownAccounts)
+	guard accounts.contains(where: { $0.username == username }) else { return }
+	try await client.request(.removeAccount(username: username))
+}

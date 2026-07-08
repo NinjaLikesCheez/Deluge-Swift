@@ -521,4 +521,51 @@ public extension DelugeRequest {
 	static var rescanPlugins: DelugeRequest<EmptyResponse> {
 		.init(method: "core.rescan_plugins", args: [])
 	}
+
+	/// Requests the list of known user accounts. Requires admin authentication.
+	///
+	/// RPC Method: `core.get_known_accounts`
+	static var knownAccounts: DelugeRequest<[Account]> {
+		.init(method: "core.get_known_accounts", args: [])
+	}
+
+	/// Requests the mappings between named authentication levels and their underlying integer values.
+	///
+	/// RPC Method: `core.get_auth_levels_mappings`
+	static var authLevelsMappings: DelugeRequest<AuthLevelsMappings> {
+		.init(method: "core.get_auth_levels_mappings", args: [])
+	}
+
+	/// Creates a new user account. Requires admin authentication.
+	///
+	/// RPC Method: `core.create_account`
+	///
+	/// - Parameters:
+	///   - username: The username for the new account.
+	///   - password: The password for the new account.
+	///   - authLevel: The authentication level for the new account.
+	static func createAccount(username: String, password: String, authLevel: AuthLevel) -> DelugeRequest<Bool> {
+		.init(method: "core.create_account", args: [username, password, authLevel.rawValue])
+	}
+
+	/// Updates an existing user account. Requires admin authentication.
+	///
+	/// RPC Method: `core.update_account`
+	///
+	/// - Parameters:
+	///   - username: The username of the account to update.
+	///   - password: The new password for the account.
+	///   - authLevel: The new authentication level for the account.
+	static func updateAccount(username: String, password: String, authLevel: AuthLevel) -> DelugeRequest<Bool> {
+		.init(method: "core.update_account", args: [username, password, authLevel.rawValue])
+	}
+
+	/// Removes a user account. Requires admin authentication.
+	///
+	/// RPC Method: `core.remove_account`
+	///
+	/// - Parameter username: The username of the account to remove.
+	static func removeAccount(username: String) -> DelugeRequest<Bool> {
+		.init(method: "core.remove_account", args: [username])
+	}
 }
