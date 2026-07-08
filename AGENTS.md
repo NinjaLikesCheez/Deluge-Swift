@@ -18,6 +18,13 @@ A Combine/Swift Concurrency-powered Deluge JSON-RPC API client (Swift package, `
 
 Formatting/linting uses `xcrun swift-format` with the config in `.swift-format` (tabs, 120 col line length, enforced import ordering). CI (`.github/workflows/ci.yml`) runs on `macos-15` via `scripts/run_ci.sh` and will fail if code isn't pre-formatted.
 
+### Container hygiene when testing against a Deluge daemon
+
+Whenever a task calls for testing against a live Deluge daemon — running `scripts/run_integration_tests.sh`, or manually poking at one with `docker`/`podman` — always spin up your own fresh container rather than attaching to, reusing, or touching whatever Deluge container(s) may already be running on the host. Never stop, remove, or restart a pre-existing container you didn't start yourself, even if it looks idle or is also named `linuxserver/deluge` — it may belong to the user or another process. Once testing is finished, stop and remove (pull down) only the container you created.
+
+- `scripts/run_integration_tests.sh` already follows this pattern for CI/local runs (a dedicated `DelugeIntegrationTests` container is stopped/removed only if a prior run of that same script left one behind, then torn down again at the end) — prefer that script for anything the integration test suite covers.
+- For ad-hoc/manual testing outside that script, `docker run -d --name <your-own-unique-name> linuxserver/deluge` (or the `podman` equivalent) and `docker stop`/`docker rm` that same name when done.
+
 ## Architecture
 
 ### Request/Response flow
