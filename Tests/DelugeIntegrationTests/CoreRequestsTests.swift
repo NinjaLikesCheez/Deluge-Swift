@@ -59,6 +59,83 @@ struct CoreRequestsTests {
 		}
 
 		@Test
+		func test_addFileURLAsync() async throws {
+			let url = urlForResource(named: TestConfig.torrent2)
+
+			try await ensureTorrentRemoved(hash: TestConfig.torrent2Hash, from: client)
+
+			try await confirmation { confirmation in
+				for try await hash in client.request(.addAsync(fileURL: url)).values {
+					#expect(hash == TestConfig.torrent2Hash)
+					confirmation.confirm()
+				}
+			}
+		}
+
+		@Test
+		func test_prefetchMetadata() async throws {
+			let url = URL(string: TestConfig.magnetURL)!
+
+			try await ensureTorrentRemoved(hash: TestConfig.magnetHash, from: client)
+
+			try await confirmation { confirmation in
+				for try await metadata in client.request(.prefetchMetadata(magnetURL: url)).values {
+					#expect(metadata.torrentID == TestConfig.magnetHash)
+					confirmation.confirm()
+				}
+			}
+		}
+
+		@Test
+		func test_removeTorrent() async throws {
+			let url = urlForResource(named: TestConfig.torrent1)
+			try await ensureTorrentAdded(fileURL: url, to: client)
+
+			try await confirmation { confirmation in
+				for try await removed in client.request(.remove(hash: TestConfig.torrent1Hash, removeData: false)).values {
+					#expect(removed)
+					confirmation.confirm()
+				}
+			}
+		}
+
+		@Test
+		func test_setTrackers() async throws {
+			let url = urlForResource(named: TestConfig.torrent1)
+			try await ensureTorrentAdded(fileURL: url, to: client)
+
+			let trackers = [Tracker(url: "http://example.com/announce", tier: 0)]
+			for try await _ in client.request(.setTrackers(hash: TestConfig.torrent1Hash, trackers: trackers)).values {}
+
+			for try await _ in client.request(
+				.setTrackers(hash: TestConfig.torrent1Hash, trackers: TestConfig.torrent1Trackers)
+			).values {}
+		}
+
+		@Test
+		func test_magnetURI() async throws {
+			let url = urlForResource(named: TestConfig.torrent1)
+			try await ensureTorrentAdded(fileURL: url, to: client)
+
+			try await confirmation { confirmation in
+				for try await uri in client.request(.magnetURI(hash: TestConfig.torrent1Hash)).values {
+					#expect(uri.hasPrefix("magnet:"))
+					confirmation.confirm()
+				}
+			}
+		}
+
+		@Test
+		func test_renameFolder() async throws {
+			let url = urlForResource(named: TestConfig.torrent1)
+			try await ensureTorrentAdded(fileURL: url, to: client)
+
+			for try await _ in client.request(
+				.renameFolder(hash: TestConfig.torrent1Hash, folder: "does-not-exist/", newFolder: "renamed/")
+			).values {}
+		}
+
+		@Test
 		func test_reannounce() async throws {
 			let url = urlForResource(named: TestConfig.torrent1)
 
@@ -167,6 +244,62 @@ struct CoreRequestsTests {
 		let url = URL(string: TestConfig.webURL)!
 		try await ensureTorrentRemoved(hash: TestConfig.webURLHash, from: client)
 		try await client.request(.add(url: url))
+	}
+
+	@Test
+	func test_addFileURLAsync_concurrency() async throws {
+		let url = urlForResource(named: TestConfig.torrent2)
+		try await ensureTorrentRemoved(hash: TestConfig.torrent2Hash, from: client)
+		let hash = try await client.request(.addAsync(fileURL: url))
+		#expect(hash == TestConfig.torrent2Hash)
+	}
+
+	@Test
+	func test_prefetchMetadata_concurrency() async throws {
+		let url = URL(string: TestConfig.magnetURL)!
+		try await ensureTorrentRemoved(hash: TestConfig.magnetHash, from: client)
+
+		let metadata = try await client.request(.prefetchMetadata(magnetURL: url))
+		#expect(metadata.torrentID == TestConfig.magnetHash)
+	}
+
+	@Test
+	func test_removeTorrent_concurrency() async throws {
+		let url = urlForResource(named: TestConfig.torrent1)
+		try await ensureTorrentAdded(fileURL: url, to: client)
+
+		let removed = try await client.request(.remove(hash: TestConfig.torrent1Hash, removeData: false))
+		#expect(removed)
+	}
+
+	@Test
+	func test_setTrackers_concurrency() async throws {
+		let url = urlForResource(named: TestConfig.torrent1)
+		try await ensureTorrentAdded(fileURL: url, to: client)
+
+		let trackers = [Tracker(url: "http://example.com/announce", tier: 0)]
+		try await client.request(.setTrackers(hash: TestConfig.torrent1Hash, trackers: trackers))
+
+		try await client.request(.setTrackers(hash: TestConfig.torrent1Hash, trackers: TestConfig.torrent1Trackers))
+	}
+
+	@Test
+	func test_magnetURI_concurrency() async throws {
+		let url = urlForResource(named: TestConfig.torrent1)
+		try await ensureTorrentAdded(fileURL: url, to: client)
+
+		let uri = try await client.request(.magnetURI(hash: TestConfig.torrent1Hash))
+		#expect(uri.hasPrefix("magnet:"))
+	}
+
+	@Test
+	func test_renameFolder_concurrency() async throws {
+		let url = urlForResource(named: TestConfig.torrent1)
+		try await ensureTorrentAdded(fileURL: url, to: client)
+
+		try await client.request(
+			.renameFolder(hash: TestConfig.torrent1Hash, folder: "does-not-exist/", newFolder: "renamed/")
+		)
 	}
 
 	@Test
