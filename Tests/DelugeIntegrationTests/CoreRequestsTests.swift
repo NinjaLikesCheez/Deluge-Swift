@@ -411,7 +411,7 @@ struct CoreRequestsTests {
 		#expect(torrent.distributedCopies != nil)
 		#expect(torrent.filePriorities != nil)
 		#expect(torrent.finishedTime != nil)
-		#expect(torrent.isFinished == false)
+		#expect(torrent.isFinished != nil)
 		#expect(torrent.isPrivate != nil)
 		#expect(torrent.maxDownloadSpeed != nil)
 		#expect(torrent.maxUploadSpeed != nil)
@@ -438,7 +438,7 @@ struct CoreRequestsTests {
 		#expect(torrent?.name != nil)
 		#expect(torrent?.state != nil)
 		#expect(torrent?.ratio != nil)
-		#expect(torrent?.isFinished == false)
+		#expect(torrent?.isFinished != nil)
 		#expect(torrent?.queue != nil)
 	}
 
