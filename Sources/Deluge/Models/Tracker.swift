@@ -1,9 +1,9 @@
 /// A Deluge torrent tracker.
 public struct Tracker: Equatable, Decodable, Sendable {
 	/// The tracker URL.
-	public let url: String
+	public var url: String
 	/// The tier the tracker belongs to. Trackers in lower tiers are tried first.
-	public let tier: Int
+	public var tier: Int
 
 	enum CodingKeys: String, CodingKey {
 		case url
