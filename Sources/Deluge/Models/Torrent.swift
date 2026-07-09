@@ -3,81 +3,81 @@ import Foundation
 /// A Deluge torrent.
 public struct Torrent: Equatable, Decodable, Sendable {
 	/// The number of seconds the torrent has been active (downloading or seeding).
-	public var activeTime: TimeInterval?
+	public let activeTime: TimeInterval?
 	/// Whether the torrent is managed automatically by Deluge's queueing system.
-	public var autoManaged: Bool?
+	public let autoManaged: Bool?
 	/// The number of seconds since the torrent completed downloading.
-	public var completedTime: TimeInterval?
+	public let completedTime: TimeInterval?
 	/// The comment embedded in the torrent file.
-	public var comment: String?
+	public let comment: String?
 	/// The name of the client that created the torrent file.
-	public var creator: String?
+	public let creator: String?
 	/// The date the torrent was added to the server.
-	public var dateAdded: Date?
+	public let dateAdded: Date?
 	/// The number of copies of each piece available across connected peers.
-	public var distributedCopies: Float?
+	public let distributedCopies: Float?
 	/// The number of bytes downloaded for the torrent.
-	public var downloaded: Int64?
+	public let downloaded: Int64?
 	/// The file path where the torrent data is being downloaded to.
-	public var downloadPath: String?
+	public let downloadPath: String?
 	/// The download rate for the torrent in bytes/s.
-	public var downloadRate: Int64?
+	public let downloadRate: Int64?
 	/// The estimated number of seconds until the torrent completes downloading.
-	public var eta: TimeInterval?
+	public let eta: TimeInterval?
 	/// The priority of each file in the torrent.
-	public var filePriorities: [Int]?
+	public let filePriorities: [Int]?
 	/// The number of seconds since the torrent finished (equivalent to `completedTime`).
-	public var finishedTime: TimeInterval?
+	public let finishedTime: TimeInterval?
 	/// The SHA1 hash for the torrent.
-	public var hash: String
+	public let hash: String
 	/// Whether the torrent has finished downloading.
-	public var isFinished: Bool?
+	public let isFinished: Bool?
 	/// Whether the torrent is private (disables DHT, PEX, and LSD).
-	public var isPrivate: Bool?
+	public let isPrivate: Bool?
 	/// The label assigned to the torrent. If no label is assigned then the value will be an empty string.
-	public var label: String?
+	public let label: String?
 	/// The configured maximum download speed for the torrent in KiB/s. A value of `-1` means unlimited.
-	public var maxDownloadSpeed: Float?
+	public let maxDownloadSpeed: Float?
 	/// The configured maximum upload speed for the torrent in KiB/s. A value of `-1` means unlimited.
-	public var maxUploadSpeed: Float?
+	public let maxUploadSpeed: Float?
 	/// The path torrent data is moved to once the torrent finishes downloading.
-	public var moveCompletedPath: String?
+	public let moveCompletedPath: String?
 	/// The name of the torrent.
-	public var name: String?
+	public let name: String?
 	/// The number of files contained in the torrent.
-	public var numFiles: Int?
+	public let numFiles: Int?
 	/// The number of peers connected for the torrent.
-	public var peers: Int?
+	public let peers: Int?
 	/// The download progress for the torrent as a percentage. This is a value between 0 and 1.
-	public var progress: Float?
+	public let progress: Float?
 	/// The queue position of the torrent.
-	public var queue: Int?
+	public let queue: Int?
 	/// The upload/download ratio for the torrent.
-	public var ratio: Float?
+	public let ratio: Float?
 	/// The number of connected seeds for the torrent.
-	public var seeds: Int?
+	public let seeds: Int?
 	/// The number of seconds the torrent has spent seeding.
-	public var seedingTime: TimeInterval?
+	public let seedingTime: TimeInterval?
 	/// The size of the torrent contents in bytes.
-	public var size: Int64?
+	public let size: Int64?
 	/// The state of the torrent.
-	public var state: State?
+	public let state: State?
 	/// The number of available peers for the torrent.
-	public var totalPeers: Int?
+	public let totalPeers: Int?
 	/// The number of available seeds for the torrent.
-	public var totalSeeds: Int?
+	public let totalSeeds: Int?
 	/// The URL of the tracker currently in use.
-	public var tracker: String?
+	public let tracker: String?
 	/// The host portion of the tracker currently in use.
-	public var trackerHost: String?
+	public let trackerHost: String?
 	/// The status message reported by the tracker currently in use.
-	public var trackerStatus: String?
+	public let trackerStatus: String?
 	/// The trackers used by the torrent.
-	public var trackers: [Tracker]?
+	public let trackers: [Tracker]?
 	/// The number of bytes uploaded for the torrent.
-	public var uploaded: Int64?
+	public let uploaded: Int64?
 	/// The upload rate for the torrent in bytes/s.
-	public var uploadRate: Int64?
+	public let uploadRate: Int64?
 
 	/// Initializes a torrent.
 	public init(

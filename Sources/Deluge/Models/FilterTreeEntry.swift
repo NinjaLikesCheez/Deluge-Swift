@@ -2,9 +2,9 @@
 /// torrents that match it.
 public struct FilterTreeEntry: Equatable, Decodable, Sendable {
 	/// The filter value, e.g. a state name, tracker host, label, or owner.
-	public var value: String
+	public let value: String
 	/// The number of torrents matching this value.
-	public var count: Int
+	public let count: Int
 
 	public init(from decoder: any Decoder) throws {
 		var container = try decoder.unkeyedContainer()
