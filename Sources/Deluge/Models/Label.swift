@@ -1,7 +1,7 @@
 /// A Deluge label.
 public struct Label: Equatable, Decodable, Hashable, Sendable {
 	/// The label name.
-	public var name: String
+	public let name: String
 	/// The number of torrents with this label.
-	public var count: Int
+	public let count: Int
 }

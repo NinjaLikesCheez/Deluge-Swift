@@ -2,9 +2,9 @@
 /// `web.download_torrent_from_url`) or a magnet URI, along with its per-torrent options.
 public struct AddTorrentEntry {
 	/// The path to a local `.torrent` file, or a magnet URI.
-	public var path: String
+	public let path: String
 	/// The options to add the torrent with.
-	public var options: [TorrentOption]
+	public let options: [TorrentOption]
 
 	/// Initializes an entry for `web.add_torrents`.
 	///
