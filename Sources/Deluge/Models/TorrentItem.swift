@@ -38,20 +38,19 @@ struct TorrentTree: Decodable, Sendable {
 			}
 		}
 
-		init(from decoder: Decoder) throws {
-			let container = try decoder.singleValueContainer()
+		private enum TypeCodingKeys: String, CodingKey {
+			case type
+		}
 
-			if let file = try? container.decode(File.self) {
-				self = .file(file)
-			} else if let directory = try? container.decode(Directory.self) {
-				self = .directory(directory)
-			} else {
-				throw DecodingError.typeMismatch(
-					TreeItem.self,
-					DecodingError.Context(
-						codingPath: decoder.codingPath,
-						debugDescription: "Value is neither a TreeFile nor a TreeDirectory"
-					))
+		init(from decoder: Decoder) throws {
+			let container = try decoder.container(keyedBy: TypeCodingKeys.self)
+			let type = try container.decode(String.self, forKey: .type)
+
+			switch type {
+			case "dir":
+				self = try .directory(Directory(from: decoder))
+			default:
+				self = try .file(File(from: decoder))
 			}
 		}
 	}
@@ -64,16 +63,14 @@ struct TorrentTree: Decodable, Sendable {
 		let priority: Priority
 	}
 
+	// Directory nodes carry aggregate keys alongside `contents` (`type`, `path`, `size`, `progress`,
+	// `progresses`, `priority`), so only `contents` is decoded here — decoding the whole node as a
+	// dictionary of children would fail on those extra keys.
 	struct Directory: Decodable, Sendable {
 		let contents: [String: TreeItem]
 
 		enum CodingKeys: CodingKey {
 			case contents
-		}
-
-		init(from decoder: any Decoder) throws {
-			let container = try decoder.singleValueContainer()
-			contents = try container.decode([String: TreeItem].self)
 		}
 	}
 }
